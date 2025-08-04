@@ -28,6 +28,9 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->id('admin')
             ->path('admin')
+            ->brandName('ALCO Ticketing System')
+            ->brandLogo(asset('images/Logo-Alco.png'))
+            ->brandLogoHeight('3rem')
             ->colors([
                 'primary' => Color::Blue,
             ])
@@ -36,6 +39,10 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
+            ->renderHook(
+                'panels::auth.login.form.after',
+                fn() => view('filament.auth.login')
+            )
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
