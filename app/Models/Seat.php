@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class Seat extends Model
@@ -14,6 +15,17 @@ class Seat extends Model
         'column',
         'registration_id',
     ];
+
+    protected $appends = [
+        'is_available',
+    ];
+
+    protected function isAvailable(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => empty($this->registration_id),
+        );
+    }
 
     public function registration()
     {
