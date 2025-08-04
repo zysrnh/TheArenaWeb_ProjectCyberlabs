@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\RegistrationResource\Pages;
 
 use App\Filament\Admin\Resources\RegistrationResource;
+use App\Jobs\GenerateQr;
 use App\Services\QrService;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
@@ -31,13 +32,6 @@ class CreateRegistration extends CreateRecord
     {
         $registration = $this->record;
 
-        $qr = app(QrService::class)->generate(data: $registration->unique_code);
-
-        $folder = 'app/public/qr_codes';
-        $filename = $registration->unique_code . '.png';
-        $fullPath = storage_path("{$folder}/{$filename}");
-
-        File::ensureDirectoryExists(storage_path($folder));
-        $qr->saveToFile($fullPath);
+        GenerateQr::dispatch($registration);
     }
 }
