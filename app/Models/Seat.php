@@ -31,4 +31,9 @@ class Seat extends Model
     {
         return $this->belongsTo(Registration::class);
     }
+
+    public function event()
+    {
+        return $this->belongsTo(Event::class);
+    }
 }

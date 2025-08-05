@@ -23,6 +23,10 @@ return new class extends Migration
             $table->timestamp('last_successful_sent_at')->nullable();
             $table->integer('whatsapp_send_attempts')->default(0);
             $table->json('extras')->nullable();
+            $table->foreignId('event_id')
+                ->nullable()
+                ->constrained()
+                ->onDelete('cascade');
             $table->softDeletes();
             $table->timestamps();
         });

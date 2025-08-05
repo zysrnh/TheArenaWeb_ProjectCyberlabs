@@ -18,7 +18,14 @@ return new class extends Migration
             $table->string('group_name')->nullable(); // for table name like "Table 1"
             $table->unsignedInteger('row')->nullable();
             $table->unsignedInteger('column')->nullable();
-            $table->foreignId('registration_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('registration_id')
+                ->nullable()
+                ->constrained()
+                ->nullOnDelete();
+            $table->foreignId('event_id')
+                ->nullable()
+                ->constrained()
+                ->onDelete('cascade');
             $table->timestamps();
         });
     }

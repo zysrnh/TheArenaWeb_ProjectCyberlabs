@@ -122,4 +122,9 @@ class Registration extends Model
     {
         return $this->hasOne(Seat::class);
     }
+
+    public function event()
+    {
+        return $this->belongsTo(Event::class);
+    }
 }
