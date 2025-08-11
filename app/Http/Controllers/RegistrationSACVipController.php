@@ -96,7 +96,7 @@ class RegistrationSACVipController extends Controller
             return redirect()->route('user.registration')->with('info', 'Harap isi form registrasi terlebih dahulu sebelum memilih kursi.');
         }
 
-        $seatingType = 'table'; // Switch between 'theater' and 'table'
+        $seatingType = 'theater'; // Switch between 'theater' and 'table'
 
         if ($seatingType == 'table') {
             // Group by table and calculate remaining seats

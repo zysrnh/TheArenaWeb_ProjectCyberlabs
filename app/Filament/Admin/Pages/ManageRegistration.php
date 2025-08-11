@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Pages;
 
 use App\Settings\RegistrationSettings;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Dom\Text;
 use Filament\Forms;
 use Filament\Forms\Components\TextInput;
@@ -11,7 +12,10 @@ use Filament\Pages\SettingsPage;
 
 class ManageRegistration extends SettingsPage
 {
+    use HasPageShield;
+
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static ?string $navigationGroup = 'Settings';
 
     protected static string $settings = RegistrationSettings::class;
 

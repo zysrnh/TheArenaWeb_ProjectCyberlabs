@@ -41,9 +41,11 @@ class Registration extends Model
         });
 
         static::deleted(function (Registration $registration) {
-            $registration->seat->update(
-                ['registration_id' => null]
-            );
+            if ($registration->seat_id != null) {
+                $registration->seat->update(
+                    ['registration_id' => null]
+                );
+            }
         });
     }
 

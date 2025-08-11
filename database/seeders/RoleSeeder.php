@@ -42,6 +42,18 @@ class RoleSeeder extends Seeder
             'restore_any_registration',
             'replicate_registration',
             'reorder_registration',
+            'view_any_user',
+            'view_user',
+            'create_user',
+            'update_user',
+            'delete_user',
+            'delete_any_user',
+            'force_delete_user',
+            'force_delete_any_user',
+            'restore_user',
+            'restore_any_user',
+            'replicate_user',
+            'reorder_user',
         ]);
     }
 }

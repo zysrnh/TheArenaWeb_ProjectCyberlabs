@@ -43,7 +43,6 @@ class RegistrationResource extends Resource
                     ->columnSpan(2),
                 TextInput::make('phone')
                     ->label('Nomor Telepon (Whatsapp)')
-                    ->required()
                     ->tel()
                     ->prefix('+62'),
                 TextInput::make('email')
