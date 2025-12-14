@@ -1,0 +1,621 @@
+import { Head, Link, useForm, usePage, router } from "@inertiajs/react";
+import { useState, useEffect } from "react";
+import { Phone, Mail, Calendar, User, MapPin, LogOut, Video, Clock, X, CreditCard, CheckCircle, AlertCircle } from "lucide-react";
+
+import Navigation from "../../Components/Navigation";
+import Footer from "../../Components/Footer";
+
+export default function Profile() {
+  const { auth, upcomingBookings = [], historyBookings = {}, flash } = usePage().props;
+  const [activeTab, setActiveTab] = useState('data-profil');
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [imageFileName, setImageFileName] = useState("No file chosen");
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationType, setNotificationType] = useState('success');
+
+  const { data, setData, post, processing, errors } = useForm({
+    name: auth.client?.name || "",
+    province: auth.client?.province || "",
+    city: auth.client?.city || "",
+    address: auth.client?.address || "",
+    phone: auth.client?.phone || "",
+    gender: auth.client?.gender || "",
+    birth_date: auth.client?.birth_date || "",
+    profile_image: null,
+  });
+
+  
+
+  // Tampilkan notifikasi jika ada flash message
+  useEffect(() => {
+    if (flash?.success) {
+      setNotificationMessage(flash.success);
+      setNotificationType('success');
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
+    } else if (flash?.error) {
+      setNotificationMessage(flash.error);
+      setNotificationType('error');
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
+    }
+  }, [flash]);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+      setData('profile_image', file);
+      setImageFileName(file.name);
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    post('/profile/update', {
+      forceFormData: true,
+      onSuccess: () => {
+        setNotificationMessage('Profil berhasil diperbarui!');
+        setNotificationType('success');
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 3000);
+      }
+    });
+  };
+
+  const handleCancelBooking = (booking) => {
+    setSelectedBooking(booking);
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelBooking = () => {
+    if (selectedBooking) {
+      router.post(`/profile/booking/${selectedBooking.id}/cancel`, {
+        booking_ids: selectedBooking.booking_ids || [selectedBooking.id]
+      }, {
+        onSuccess: () => {
+          setShowCancelModal(false);
+          setSelectedBooking(null);
+        },
+        onError: (errors) => {
+          console.error('Cancellation failed:', errors);
+          setShowCancelModal(false);
+          setSelectedBooking(null);
+        }
+      });
+    }
+  };
+
+  const handleLogout = () => {
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    router.post('/logout');
+  };
+
+  const getStatusBadge = (color) => {
+    const colors = {
+      yellow: 'bg-yellow-500',
+      green: 'bg-green-600',
+      blue: 'bg-blue-600',
+      red: 'bg-red-600',
+    };
+    return colors[color] || 'bg-gray-500';
+  };
+
+  return (
+    <>
+      <Head title="THE ARENA - Profile" />
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+        * {
+          font-family: 'Montserrat', sans-serif;
+        }
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
+
+      {/* Notification Toast */}
+      {showNotification && (
+        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg ${notificationType === 'success' ? 'bg-green-500' : 'bg-red-500'
+          } text-white font-semibold animate-slide-in`}>
+          {notificationMessage}
+        </div>
+      )}
+
+      <div className="min-h-screen flex flex-col bg-[#013064]">
+        <Navigation activePage="profile" />
+
+        <main className="flex-1 py-8 px-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6">
+              <h1 className="text-[#ffd22f] text-2xl font-bold mb-1">Profil</h1>
+              <h2 className="text-white text-5xl font-bold">Halo, {auth.client?.name}</h2>
+            </div>
+
+            <div className="grid grid-cols-12 gap-6">
+              {/* Sidebar */}
+              <div className="col-span-12 lg:col-span-3">
+                <div className="bg-[#024b8a]/40 rounded overflow-hidden">
+                  <button
+                    onClick={() => setActiveTab('data-profil')}
+                    className={`w-full flex items-center gap-3 px-6 py-4 text-left transition ${activeTab === 'data-profil'
+                      ? 'bg-[#ffd22f] text-[#013064]'
+                      : 'text-white hover:bg-[#035a9e]'
+                      }`}
+                  >
+                    <User className="w-5 h-5" />
+                    <span className="font-semibold">Data Profil</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('jadwal-booking')}
+                    className={`w-full flex items-center gap-3 px-6 py-4 text-left transition ${activeTab === 'jadwal-booking'
+                      ? 'bg-[#ffd22f] text-[#013064]'
+                      : 'text-white hover:bg-[#035a9e]'
+                      }`}
+                  >
+                    <Calendar className="w-5 h-5" />
+                    <span className="font-semibold">Jadwal Booking</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('history')}
+                    className={`w-full flex items-center gap-3 px-6 py-4 text-left transition ${activeTab === 'history'
+                      ? 'bg-[#ffd22f] text-[#013064]'
+                      : 'text-white hover:bg-[#035a9e]'
+                      }`}
+                  >
+                    <Video className="w-5 h-5" />
+                    <span className="font-semibold">History</span>
+                  </button>
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-6 py-4 text-left text-white hover:bg-[#035a9e] transition"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span className="font-semibold">Keluar Akun</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Content */}
+              <div className="col-span-12 lg:col-span-9">
+                {activeTab === 'data-profil' && (
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Profile Image Section */}
+                    <div className="flex items-start gap-6 mb-8">
+                      <div className="flex-shrink-0">
+                        <img
+                          src={previewImage || (auth.client?.profile_image ? `/storage/${auth.client.profile_image}` : "/images/default-avatar.jpg")}
+                          alt="Profile"
+                          className="w-44 h-44 rounded object-cover border-4 border-white/20"
+                        />
+                      </div>
+                      <div className="flex-1 pt-4">
+                        <p className="text-gray-300 text-sm mb-3">{imageFileName}</p>
+                        <label className="inline-block bg-[#ffd22f] text-[#013064] px-8 py-3 font-bold cursor-pointer hover:bg-[#ffe066] transition">
+                          Ubah Gambar Profil
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Form Fields */}
+                    <div className="space-y-5">
+                      <div>
+                        <label className="block text-[#ffd22f] text-sm font-medium mb-2">
+                          Nama
+                        </label>
+                        <input
+                          type="text"
+                          value={data.name}
+                          onChange={(e) => setData('name', e.target.value)}
+                          className="w-full px-4 py-3 bg-white/95 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ffd22f]"
+                        />
+                        {errors.name && (
+                          <p className="text-red-400 text-xs mt-1">{errors.name}</p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[#ffd22f] text-sm font-medium mb-2">
+                            Provinsi
+                          </label>
+                          <select
+                            value={data.province}
+                            onChange={(e) => setData('province', e.target.value)}
+                            className="w-full px-4 py-3 bg-white/95 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ffd22f] appearance-none"
+                          >
+                            <option value="">Pilih Provinsi</option>
+                            <option value="Jawa Barat">Jawa Barat</option>
+                            <option value="Jawa Tengah">Jawa Tengah</option>
+                            <option value="Jawa Timur">Jawa Timur</option>
+                            <option value="DKI Jakarta">DKI Jakarta</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[#ffd22f] text-sm font-medium mb-2">
+                            Kota
+                          </label>
+                          <select
+                            value={data.city}
+                            onChange={(e) => setData('city', e.target.value)}
+                            className="w-full px-4 py-3 bg-white/95 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ffd22f] appearance-none"
+                          >
+                            <option value="">Pilih Kota</option>
+                            <option value="Bandung">Bandung</option>
+                            <option value="Jakarta">Jakarta</option>
+                            <option value="Surabaya">Surabaya</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[#ffd22f] text-sm font-medium mb-2">
+                          Alamat
+                        </label>
+                        <textarea
+                          value={data.address}
+                          onChange={(e) => setData('address', e.target.value)}
+                          rows="4"
+                          className="w-full px-4 py-3 bg-white/95 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ffd22f] resize-none"
+                          placeholder="Jl Terusan Mars Utara III No. 8D Kota Bandung, 40292"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[#ffd22f] text-sm font-medium mb-2">
+                            Telepon
+                          </label>
+                          <input
+                            type="tel"
+                            value={data.phone}
+                            onChange={(e) => setData('phone', e.target.value)}
+                            className="w-full px-4 py-3 bg-white/95 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ffd22f]"
+                            placeholder="0812-3456-789"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[#ffd22f] text-sm font-medium mb-2">
+                            Jenis Kelamin
+                          </label>
+                          <select
+                            value={data.gender}
+                            onChange={(e) => setData('gender', e.target.value)}
+                            className="w-full px-4 py-3 bg-white/95 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ffd22f] appearance-none"
+                          >
+                            <option value="">Pilih</option>
+                            <option value="Laki-laki">Laki-laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="max-w-md">
+                        <label className="block text-[#ffd22f] text-sm font-medium mb-2">
+                          Tanggal Lahir
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            value={data.birth_date}
+                            onChange={(e) => setData('birth_date', e.target.value)}
+                            className="w-full px-4 py-3 bg-white/95 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ffd22f]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-4">
+                      <button
+                        type="submit"
+                        disabled={processing}
+                        className="bg-[#ffd22f] text-[#013064] px-12 py-3 font-bold text-base hover:bg-[#ffe066] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {processing ? 'Menyimpan...' : 'Ubah Data'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {activeTab === 'jadwal-booking' && (
+                  <div>
+                    <div className="mb-6">
+                      <h3 className="text-[#ffd22f] text-2xl font-bold mb-2">Jadwal Booking Anda</h3>
+                      <p className="text-white/70">Daftar booking yang akan datang</p>
+                    </div>
+
+                    {upcomingBookings.length > 0 ? (
+                      <div className="space-y-4">
+                        {upcomingBookings.map((booking, index) => (
+                          <div key={booking.id} className="bg-white rounded-lg p-6">
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <span className="text-2xl font-bold text-[#013064]">
+                                    {index + 1}.
+                                  </span>
+                                  <span className={`px-4 py-1.5 rounded text-white text-xs font-black tracking-wider ${getStatusBadge(booking.status_color)}`}>
+                                    {booking.status_label}
+                                  </span>
+
+                                  {/* TAMBAHAN: PAYMENT STATUS BADGE */}
+                                  {booking.is_paid ? (
+                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                                      <CheckCircle className="w-3 h-3" />
+                                      Terbayar
+                                    </span>
+                                  ) : booking.payment_status === 'pending' ? (
+                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
+                                      <AlertCircle className="w-3 h-3" />
+                                      Belum Bayar
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              {/* TAMBAHAN: TOMBOL BAYAR & CANCEL */}
+                              <div className="flex gap-2">
+                                {booking.can_pay && (
+  <form 
+    action={`/payment/process/${booking.id}`} 
+    method="POST"
+    className="flex-1 md:flex-none"
+  >
+    <input type="hidden" name="_token" value={document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')} />
+    <button
+      type="submit"
+      className="w-full flex items-center justify-center gap-2 px-3 md:px-4 py-2 bg-[#ffd22f] text-[#013064] rounded hover:bg-[#ffe066] transition font-semibold text-sm"
+    >
+      <CreditCard className="w-4 h-4" />
+      <span>Bayar</span>
+    </button>
+  </form>
+)}
+                                {booking.can_cancel && (
+                                  <button
+                                    onClick={() => handleCancelBooking(booking)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                  >
+                                    <X className="w-4 h-4" />
+                                    <span className="text-sm font-semibold">Batalkan</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="space-y-3 mb-4">
+                              <div className="flex items-start gap-3">
+                                <Clock className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <p className="text-sm text-gray-600">Jam Sewa</p>
+                                  <p className="font-bold text-lg text-[#013064]">{booking.time_slot}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-3">
+                                <Calendar className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <p className="text-sm text-gray-600">Tanggal</p>
+                                  <p className="font-bold text-lg text-[#013064]">{booking.booking_date}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-3">
+                                <MapPin className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <p className="text-sm text-gray-600">Jenis Lapangan</p>
+                                  <p className="font-bold text-lg text-[#013064]">{booking.venue_type}</p>
+                                </div>
+                              </div>
+
+                              {/* TAMBAHAN: BILL NUMBER & PAYMENT METHOD */}
+                              {booking.bill_no && (
+                                <div className="flex items-start gap-3">
+                                  <CreditCard className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <p className="text-sm text-gray-600">No. Tagihan</p>
+                                    <p className="font-bold text-sm text-[#013064]">{booking.bill_no}</p>
+                                  </div>
+                                </div>
+                              )}
+                              {booking.payment_method && (
+                                <div className="flex items-start gap-3">
+                                  <CreditCard className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <p className="text-sm text-gray-600">Metode Pembayaran</p>
+                                    <p className="font-bold text-sm text-[#013064]">{booking.payment_method}</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="mt-4 pt-4 border-t flex justify-between items-center">
+                              <span className="text-gray-600 font-medium">Total Pembayaran</span>
+                              <span className="text-2xl font-bold text-[#013064]">
+                                Rp. {booking.total_price}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-white/10 rounded-lg p-12 text-center">
+                        <Calendar className="w-16 h-16 text-white/30 mx-auto mb-4" />
+                        <p className="text-white text-lg">Belum ada jadwal booking</p>
+                        <Link
+                          href="/booking"
+                          className="inline-block mt-4 px-6 py-3 bg-[#ffd22f] text-[#013064] font-bold rounded hover:bg-[#ffe066] transition"
+                        >
+                          Booking Sekarang
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'history' && (
+                  <div>
+                    <div className="mb-6">
+                      <h3 className="text-[#ffd22f] text-2xl font-bold mb-2">History Booking Anda</h3>
+                      <p className="text-white/70">Riwayat semua booking</p>
+                    </div>
+
+                    {historyBookings.data && historyBookings.data.length > 0 ? (
+                      <div className="space-y-4">
+                        {/* Table View */}
+                        <div className="bg-white rounded-lg overflow-hidden">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="bg-[#ffd22f]">
+                                <th className="px-6 py-4 text-left text-[#013064] font-bold">No</th>
+                                <th className="px-6 py-4 text-left text-[#013064] font-bold">Jam Sewa</th>
+                                <th className="px-6 py-4 text-left text-[#013064] font-bold">Tanggal</th>
+                                <th className="px-6 py-4 text-left text-[#013064] font-bold">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {historyBookings.data.map((booking, index) => (
+                                <tr
+                                  key={booking.id}
+                                  className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}
+                                >
+                                  <td className="px-6 py-4 text-[#013064] font-medium">
+                                    {index + 1}.
+                                  </td>
+                                  <td className="px-6 py-4 text-[#013064] font-medium">
+                                    {booking.time_slot}
+                                  </td>
+                                  <td className="px-6 py-4 text-[#013064] font-medium">
+                                    {booking.booking_date}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className={`inline-block px-4 py-1.5 rounded text-white text-xs font-black tracking-wider ${getStatusBadge(booking.status_color)}`}>
+                                      {booking.status_label}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Pagination */}
+                        {historyBookings.last_page > 1 && (
+                          <div className="flex justify-center gap-2 mt-6">
+                            {Array.from({ length: historyBookings.last_page }, (_, i) => i + 1).map(page => (
+                              <Link
+                                key={page}
+                                href={`/profile?page=${page}`}
+                                className={`px-4 py-2 rounded font-semibold transition ${page === historyBookings.current_page
+                                  ? 'bg-[#ffd22f] text-[#013064]'
+                                  : 'bg-white/10 text-white hover:bg-white/20'
+                                  }`}
+                              >
+                                {page}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-white/10 rounded-lg p-12 text-center">
+                        <Video className="w-16 h-16 text-white/30 mx-auto mb-4" />
+                        <p className="text-white text-lg">Belum ada riwayat booking</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-[#013064] mb-4">Konfirmasi Keluar</h3>
+            <p className="text-gray-600 mb-6">Apakah Anda yakin ingin keluar dari akun?</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-300 transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmLogout}
+                className="px-6 py-2 bg-red-500 text-white rounded font-semibold hover:bg-red-600 transition"
+              >
+                Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Booking Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-[#013064] mb-4">Konfirmasi Pembatalan</h3>
+            <p className="text-gray-600 mb-6">Apakah Anda yakin ingin membatalkan booking ini?</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setSelectedBooking(null);
+                }}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-300 transition"
+              >
+                Tidak
+              </button>
+              <button
+                onClick={confirmCancelBooking}
+                className="px-6 py-2 bg-red-500 text-white rounded font-semibold hover:bg-red-600 transition"
+              >
+                Ya, Batalkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

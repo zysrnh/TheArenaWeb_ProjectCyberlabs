@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,6 +22,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ✅ Force HTTPS untuk ngrok atau production
+        if (str_contains(config('app.url'), 'ngrok') || $this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
+
+        // ✅ Atau kalau request dari proxy (ngrok, cloudflare, dll)
+        if (request()->header('X-Forwarded-Proto') === 'https') {
+            URL::forceScheme('https');
+        }
+
         Gate::before(function (User $user, string $ability) {
             if ($user->hasRole('super_admin')) {
                 return true;

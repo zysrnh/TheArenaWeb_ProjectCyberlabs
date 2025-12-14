@@ -19,6 +19,15 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
+// Import Widgets
+use App\Filament\Admin\Widgets\ClientStatsWidget;
+use App\Filament\Admin\Widgets\LatestUsersWidget;
+use App\Filament\Admin\Widgets\BookingStatsWidget;
+use App\Filament\Admin\Widgets\BookingRevenueChart;
+use App\Filament\Admin\Widgets\BookingStatusChart;
+use App\Filament\Admin\Widgets\PaymentMethodChart;
+use App\Filament\Admin\Widgets\LatestMessagesWidget;
+
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -28,9 +37,9 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->id('admin')
             ->path('admin')
-            ->brandName('ALCO Ticketing System')
-            ->brandLogo(asset('images/Logo-Alco.png'))
-            ->brandLogoHeight('3rem')
+            ->brandName('THE ARENA')
+            ->brandLogo(asset('images/LogoR.png'))
+            ->brandLogoHeight('4rem')
             ->colors([
                 'primary' => Color::Blue,
             ])
@@ -39,14 +48,37 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
+
+            // === CUSTOM CSS BACKGROUND ===
+            ->renderHook(
+                'panels::body.start',
+                fn() => view('filament.custom.styles')
+            )
+
+            // === CUSTOM LOGIN VIEW ===
             ->renderHook(
                 'panels::auth.login.form.after',
                 fn() => view('filament.auth.login')
             )
+
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // User & Admin Stats (sort: 1)
+                ClientStatsWidget::class,
+                
+                // Latest Users Table (sort: 2)
+                LatestUsersWidget::class,
+                
+                // Booking & Revenue Stats (sort: 3)
+                BookingStatsWidget::class,
+                
+                // Charts (sort: 4, 5)
+                BookingRevenueChart::class,
+                BookingStatusChart::class,
+                PaymentMethodChart::class,
+                
+                // Latest Messages (sort: 6) - DI PALING BAWAH
+                LatestMessagesWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
