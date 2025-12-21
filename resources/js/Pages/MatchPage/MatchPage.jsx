@@ -1,6 +1,6 @@
 import { Head, Link, router } from "@inertiajs/react";
 import { useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import Navigation from "../../Components/Navigation";
 import Footer from "../../Components/Footer";
 import Contact from '../../Components/Contact';
@@ -12,6 +12,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
   const [selectedDate, setSelectedDate] = useState(filters.selectedDate);
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const [weekOffset, setWeekOffset] = useState(filters.week || 0);
+  const [selectedMonth, setSelectedMonth] = useState(filters.month || '');
 
   // Handle filter changes
   const handleFilterChange = (filterName, value) => {
@@ -21,6 +22,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
       date: filterName === 'date' ? value : selectedDate,
       search: searchQuery,
       week: filterName === 'week' ? value : weekOffset,
+      month: filterName === 'month' ? value : selectedMonth,
     };
     
     // Handle year filter
@@ -42,6 +44,32 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     handleFilterChange('week', offset);
   };
 
+  // ✅ Handle month selection from date picker
+  const handleMonthChange = (e) => {
+    const month = e.target.value;
+    setSelectedMonth(month);
+    setWeekOffset(0); // Reset week offset
+    setSelectedDate(null); // Reset selected date
+    handleFilterChange('month', month);
+  };
+
+  // ✅ Handle specific date selection from date picker
+  const handleDatePickerChange = (e) => {
+    const date = e.target.value; // Format: YYYY-MM-DD
+    setSelectedDate(date);
+    setSelectedMonth(''); // Clear month when specific date is selected
+    setWeekOffset(0);
+    handleFilterChange('date', date);
+  };
+
+  // ✅ Reset to current month
+  const resetToCurrentMonth = () => {
+    setSelectedMonth('');
+    setWeekOffset(0);
+    setSelectedDate(null);
+    handleFilterChange('month', '');
+  };
+
   // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
@@ -52,6 +80,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
       date: selectedDate,
       search: searchQuery,
       week: weekOffset,
+      month: selectedMonth,
     };
     
     if (selectedYear && selectedYear !== '') {
@@ -71,6 +100,16 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
         * {
           font-family: 'Montserrat', sans-serif;
+        }
+        /* Custom date input styling */
+        input[type="month"]::-webkit-calendar-picker-indicator,
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+          cursor: pointer;
+        }
+        input[type="month"],
+        input[type="date"] {
+          color-scheme: dark;
         }
       `}</style>
       <div className="min-h-screen flex flex-col bg-[#013064]">
@@ -166,10 +205,35 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
           </div>
         </div>
 
-        {/* Date Selection */}
+        {/* ✅ Date Picker + Week Navigation */}
         <div className="bg-[#013064] pt-2 pb-6 px-2">
           <div className="max-w-7xl mx-auto">
-            {/* Week Navigation - Simplified */}
+            {/* Date Picker - Mobile Friendly */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+              {/* Specific Date Picker */}
+              <div className="relative w-full sm:w-auto">
+                <input
+                  type="date"
+                  value={selectedDate || ''}
+                  onChange={handleDatePickerChange}
+                  placeholder="Pilih Tanggal"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-[#ffd22f] text-[#013064] font-semibold rounded cursor-pointer text-center appearance-none focus:outline-none focus:ring-2 focus:ring-white"
+                />
+                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#013064] pointer-events-none" />
+              </div>
+
+              {/* Reset Button - Show when specific date is selected */}
+              {selectedDate && (
+                <button
+                  onClick={resetToCurrentMonth}
+                  className="w-full sm:w-auto px-6 py-2.5 bg-white/20 hover:bg-white/30 text-white font-medium rounded transition text-sm whitespace-nowrap"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+
+            {/* Week Navigation */}
             <div className="flex items-center justify-center gap-3 mb-6">
               <button
                 onClick={() => handleWeekChange(weekOffset - 1)}
@@ -249,122 +313,124 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
           </div>
         </div>
 
-      <div className="bg-[#013064] py-12 px-4">
-  <div className="max-w-7xl mx-auto">
-    {matches.data && matches.data.length > 0 ? (
-      <>
-        <div className="grid sm:grid-cols-2 gap-6">
-          {matches.data.map((match) => (
-            <Link key={match.id} href={`/jadwal-hasil/${match.id}`}>
-              <div className="bg-white py-5 px-5 md:py-6 md:px-6 relative hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer min-h-[250px] md:min-h-[300px] flex flex-col">
-                <div className="flex items-center justify-center gap-4 md:gap-6 lg:gap-8 flex-1">
-                  {/* Team 1 - Logo Only */}
-                  <div className="flex flex-col items-center justify-center flex-1">
-                    <img
-                      src={match.team1.logo}
-                      alt={match.team1.name}
-                      className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain"
-                      onError={(e) => {
-                        e.target.src = '/images/default-team-logo.png';
-                      }}
-                    />
-                  </div>
+        {/* Matches List */}
+        <div className="bg-[#013064] py-12 px-4">
+          <div className="max-w-7xl mx-auto">
+            {matches.data && matches.data.length > 0 ? (
+              <>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {matches.data.map((match) => (
+                    <Link key={match.id} href={`/jadwal-hasil/${match.id}`}>
+                      <div className="bg-white py-5 px-5 md:py-6 md:px-6 relative hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer min-h-[250px] md:min-h-[300px] flex flex-col">
+                        <div className="flex items-center justify-center gap-4 md:gap-6 lg:gap-8 flex-1">
+                          {/* Team 1 - Logo Only */}
+                          <div className="flex flex-col items-center justify-center flex-1">
+                            <img
+                              src={match.team1.logo}
+                              alt={match.team1.name}
+                              className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain"
+                              onError={(e) => {
+                                e.target.src = '/images/default-team-logo.png';
+                              }}
+                            />
+                          </div>
 
-                  {/* Match Info - Center */}
-                  <div className="flex flex-col items-center justify-center min-w-[130px] md:min-w-[150px]">
-                    {/* Status Badge */}
-                    <div className="mb-1.5">
-                      <span className={`px-2.5 py-1 text-xs font-bold uppercase ${
-                        match.type === 'live' 
-                          ? 'bg-red-600 text-white' 
-                          : match.type === 'upcoming'
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-600 text-white'
-                      }`}>
-                        {match.type === 'live' ? 'Live' : match.type === 'upcoming' ? 'Upcoming Match' : 'Selesai'}
-                      </span>
-                    </div>
-                    
-                    <p className="text-[11px] text-gray-600 mb-1.5 text-center italic">
-                      {match.league}
-                    </p>
-                    <p className="text-sm md:text-base font-bold text-gray-900 text-center">
-                      {match.date}
-                    </p>
-                    <p className="text-[11px] md:text-xs text-gray-600 mb-2.5 tracking-wider">
-                      {match.time}
-                    </p>
-                    {match.score ? (
-                      <p className="text-2xl md:text-3xl font-bold text-[#013064]">
-                        {match.score}
-                      </p>
-                    ) : (
-                      <p className="text-base md:text-lg font-medium text-gray-400">
-                        - vs -
-                      </p>
-                    )}
-                  </div>
+                          {/* Match Info - Center */}
+                          <div className="flex flex-col items-center justify-center min-w-[130px] md:min-w-[150px]">
+                            {/* Status Badge */}
+                            <div className="mb-1.5">
+                              <span className={`px-2.5 py-1 text-xs font-bold uppercase ${
+                                match.type === 'live' 
+                                  ? 'bg-red-600 text-white' 
+                                  : match.type === 'upcoming'
+                                  ? 'bg-green-600 text-white'
+                                  : 'bg-gray-600 text-white'
+                              }`}>
+                                {match.type === 'live' ? 'Live' : match.type === 'upcoming' ? 'Upcoming Match' : 'Selesai'}
+                              </span>
+                            </div>
+                            
+                            <p className="text-[11px] text-gray-600 mb-1.5 text-center italic">
+                              {match.league}
+                            </p>
+                            <p className="text-sm md:text-base font-bold text-gray-900 text-center">
+                              {match.date}
+                            </p>
+                            <p className="text-[11px] md:text-xs text-gray-600 mb-2.5 tracking-wider">
+                              {match.time}
+                            </p>
+                            {match.score ? (
+                              <p className="text-2xl md:text-3xl font-bold text-[#013064]">
+                                {match.score}
+                              </p>
+                            ) : (
+                              <p className="text-base md:text-lg font-medium text-gray-400">
+                                - vs -
+                              </p>
+                            )}
+                          </div>
 
-                  {/* Team 2 - Logo Only */}
-                  <div className="flex flex-col items-center justify-center flex-1">
-                    <img
-                      src={match.team2.logo}
-                      alt={match.team2.name}
-                      className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain"
-                      onError={(e) => {
-                        e.target.src = '/images/default-team-logo.png';
-                      }}
-                    />
-                  </div>
+                          {/* Team 2 - Logo Only */}
+                          <div className="flex flex-col items-center justify-center flex-1">
+                            <img
+                              src={match.team2.logo}
+                              alt={match.team2.name}
+                              className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain"
+                              onError={(e) => {
+                                e.target.src = '/images/default-team-logo.png';
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
+
+                {/* Pagination */}
+                {matches.links && matches.links.length > 3 && (
+                  <div className="flex justify-center items-center gap-2 mt-8">
+                    {matches.links.map((link, index) => {
+                      let label = link.label;
+                      if (label.includes('&laquo;')) label = '‹';
+                      if (label.includes('&raquo;')) label = '›';
+                      
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            if (link.url) {
+                              router.get(link.url, {}, {
+                                preserveState: true,
+                                preserveScroll: false,
+                              });
+                            }
+                          }}
+                          disabled={!link.url}
+                          className={`min-w-[40px] h-10 px-3 flex items-center justify-center rounded transition ${
+                            link.active
+                              ? 'bg-[#ffd22f] text-[#013064] font-bold'
+                              : link.url
+                              ? 'bg-white/20 hover:bg-white/30 text-white'
+                              : 'bg-white/10 text-white/50 cursor-not-allowed'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-white text-xl">Pilih tanggal untuk melihat pertandingan</p>
+                <p className="text-white/70 text-sm mt-2">Klik salah satu tanggal di atas</p>
               </div>
-            </Link>
-          ))}
+            )}
+          </div>
         </div>
 
-        {/* Pagination */}
-        {matches.links && matches.links.length > 3 && (
-          <div className="flex justify-center items-center gap-2 mt-8">
-            {matches.links.map((link, index) => {
-              let label = link.label;
-              if (label.includes('&laquo;')) label = '‹';
-              if (label.includes('&raquo;')) label = '›';
-              
-              return (
-                <button
-                  key={index}
-                  onClick={() => {
-                    if (link.url) {
-                      router.get(link.url, {}, {
-                        preserveState: true,
-                        preserveScroll: false,
-                      });
-                    }
-                  }}
-                  disabled={!link.url}
-                  className={`min-w-[40px] h-10 px-3 flex items-center justify-center rounded transition ${
-                    link.active
-                      ? 'bg-[#ffd22f] text-[#013064] font-bold'
-                      : link.url
-                      ? 'bg-white/20 hover:bg-white/30 text-white'
-                      : 'bg-white/10 text-white/50 cursor-not-allowed'
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </>
-    ) : (
-      <div className="text-center py-12">
-        <p className="text-white text-xl">Pilih tanggal untuk melihat pertandingan</p>
-        <p className="text-white/70 text-sm mt-2">Klik salah satu tanggal di atas</p>
-      </div>
-    )}
-  </div>
-</div>
         <Contact />
         <Footer />
       </div>

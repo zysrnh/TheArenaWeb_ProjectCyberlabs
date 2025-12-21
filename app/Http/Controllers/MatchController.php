@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Game;
 use App\Models\News;
-use App\Models\MatchHighlight; // ← TAMBAHKAN INI
+use App\Models\MatchHighlight;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -26,9 +26,15 @@ class MatchController extends Controller
         $search = $request->input('search', '');
         $selectedDate = $request->input('date');
         $weekOffset = (int) $request->input('week', 0);
+        $selectedMonth = $request->input('month'); // ✅ TAMBAH INI
 
-        // Generate 7 hari berdasarkan week offset
-        $startDate = $jakartaNow->copy()->startOfDay()->addWeeks($weekOffset);
+        // ✅ Tentukan base date berdasarkan selectedMonth atau sekarang
+        $baseDate = $selectedMonth 
+            ? Carbon::parse($selectedMonth, 'Asia/Jakarta')->startOfMonth()
+            : $jakartaNow->copy();
+
+        // Generate 7 hari berdasarkan week offset dari base date
+        $startDate = $baseDate->copy()->startOfDay()->addWeeks($weekOffset);
         $dates = [];
 
         for ($i = 0; $i < 7; $i++) {
@@ -71,21 +77,21 @@ class MatchController extends Controller
             ];
         }
 
-        // Set selectedDate ke hari ini jika belum ada yang dipilih DAN weekOffset = 0
-        if (!$selectedDate && $weekOffset == 0) {
+        // Set selectedDate ke hari ini jika belum ada yang dipilih DAN weekOffset = 0 DAN tidak ada selectedMonth
+        if (!$selectedDate && $weekOffset == 0 && !$selectedMonth) {
             $selectedDate = $jakartaNow->format('Y-m-d');
         } elseif (!$selectedDate && !empty($dates)) {
             $selectedDate = $dates[0]['full_date'];
         }
 
-        // Hitung info minggu untuk navigasi
-        $currentWeekStart = $jakartaNow->copy()->addWeeks($weekOffset);
+        // ✅ Hitung info minggu untuk navigasi (dengan base date yang tepat)
+        $currentWeekStart = $baseDate->copy()->addWeeks($weekOffset);
         $currentWeekEnd = $currentWeekStart->copy()->addDays(6);
         $weekInfo = [
             'offset' => $weekOffset,
             'start' => $currentWeekStart->format('d M'),
             'end' => $currentWeekEnd->format('d M Y'),
-            'is_current' => $weekOffset == 0,
+            'is_current' => $weekOffset == 0 && !$selectedMonth,
         ];
 
         // Query matches dengan filter
@@ -156,6 +162,7 @@ class MatchController extends Controller
                 'search' => $search,
                 'selectedDate' => $selectedDate,
                 'week' => $weekOffset,
+                'month' => $selectedMonth, // ✅ TAMBAH INI
             ],
             'dates' => $dates,
             'matches' => $matches,
@@ -194,40 +201,36 @@ class MatchController extends Controller
 
     /**
      * Display match detail page
-     * ✅ DENGAN INTEGRASI BERITA & MATCH HIGHLIGHTS
      */
     public function show($id)
-{
-    Carbon::setLocale('id');
+    {
+        Carbon::setLocale('id');
 
-    $match = Game::with([
-        'team1',
-        'team2',
-        'playerStats.player'
-    ])->findOrFail($id);
+        $match = Game::with([
+            'team1',
+            'team2',
+            'playerStats.player'
+        ])->findOrFail($id);
 
-    // ✅ AMBIL QUARTERS DAN PAKSA JADI INTEGER
-    $quartersRaw = $match->quarters;
-    
-    $quarters = [
-        'team1' => array_map('intval', $quartersRaw['team1'] ?? [0, 0, 0, 0]),
-        'team2' => array_map('intval', $quartersRaw['team2'] ?? [0, 0, 0, 0]),
-    ];
-    
-    // ✅ HITUNG ULANG TOTAL SCORE DARI QUARTERS
-    $total1 = array_sum($quarters['team1']);
-    $total2 = array_sum($quarters['team2']);
-    $calculatedScore = ($total1 > 0 || $total2 > 0) ? "{$total1} - {$total2}" : null;
+        $quartersRaw = $match->quarters;
+        
+        $quarters = [
+            'team1' => array_map('intval', $quartersRaw['team1'] ?? [0, 0, 0, 0]),
+            'team2' => array_map('intval', $quartersRaw['team2'] ?? [0, 0, 0, 0]),
+        ];
+        
+        $total1 = array_sum($quarters['team1']);
+        $total2 = array_sum($quarters['team2']);
+        $calculatedScore = ($total1 > 0 || $total2 > 0) ? "{$total1} - {$total2}" : null;
 
-    // Format statistik tim untuk tab "HASIL"
-    $stats = [];
-    if ($match->status === 'finished' && $match->stat_fg_team1) {
-        $stats = [
-            [
-                'category' => 'Field Goals',
-                'team1' => $match->stat_fg_team1 ?? '0/0 (0%)',
-                'team2' => $match->stat_fg_team2 ?? '0/0 (0%)',
-            ],
+        $stats = [];
+        if ($match->status === 'finished' && $match->stat_fg_team1) {
+            $stats = [
+                [
+                    'category' => 'Field Goals',
+                    'team1' => $match->stat_fg_team1 ?? '0/0 (0%)',
+                    'team2' => $match->stat_fg_team2 ?? '0/0 (0%)',
+                ],
                 [
                     'category' => '2 Points',
                     'team1' => $match->stat_2pt_team1 ?? '0/0 (0%)',
@@ -281,83 +284,77 @@ class MatchController extends Controller
             ];
         }
 
-        // ✅ GET MATCH-SPECIFIC HIGHLIGHTS (DARI TABEL TERPISAH)
-       // ✅ GET MATCH-SPECIFIC HIGHLIGHTS (DARI TABEL TERPISAH)
-$matchHighlights = MatchHighlight::where('game_id', $id)
-    ->where('status', 'active')
-    ->orderBy('is_featured', 'desc')
-    ->orderBy('created_at', 'desc')
-    ->get()
-    ->map(function($highlight) use ($match) {
-        return [
-            'id' => $highlight->id,
-            'title' => $highlight->title,
-            'thumbnail' => $highlight->thumbnail_url,
-            'quarter' => $highlight->quarter,
-            'duration' => $highlight->duration,
-            'views' => $highlight->formatted_views,
-            'video_url' => $highlight->video_url,
-            
-            // ✅ TAMBAHKAN DATA SEPERTI DI LIVEPAGE
-            'category' => $match->league ?? 'Basketball',
-            'venue' => $match->venue ?? 'GOR Arena',
-            'time' => $match->formatted_time ?? '00:00',
-            'date' => $match->formatted_date ?? now()->format('d M Y'),
-        ];
-    });
+        $matchHighlights = MatchHighlight::where('game_id', $id)
+            ->where('status', 'active')
+            ->orderBy('is_featured', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($highlight) use ($match) {
+                return [
+                    'id' => $highlight->id,
+                    'title' => $highlight->title,
+                    'thumbnail' => $highlight->thumbnail_url,
+                    'quarter' => $highlight->quarter,
+                    'duration' => $highlight->duration,
+                    'views' => $highlight->formatted_views,
+                    'video_url' => $highlight->video_url,
+                    'category' => $match->league ?? 'Basketball',
+                    'venue' => $match->venue ?? 'GOR Arena',
+                    'time' => $match->formatted_time ?? '00:00',
+                    'date' => $match->formatted_date ?? now()->format('d M Y'),
+                ];
+            });
 
-        // ✅ GET RELATED NEWS - Random 3 berita setiap refresh
-       $relatedNews = News::published()
-        ->inRandomOrder()
-        ->take(3)
-        ->get()
-        ->map(function($item) {
-            return [
-                'id' => $item->id,
-                'title' => $item->title,
-                'excerpt' => $item->excerpt,
-                'image' => $item->image 
-                    ? asset('storage/' . $item->image) 
-                    : 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800',
-                'category' => $item->category,
-                'date' => $item->formatted_date,
-            ];
-        });
+        $relatedNews = News::published()
+            ->inRandomOrder()
+            ->take(3)
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'title' => $item->title,
+                    'excerpt' => $item->excerpt,
+                    'image' => $item->image 
+                        ? asset('storage/' . $item->image) 
+                        : 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800',
+                    'category' => $item->category,
+                    'date' => $item->formatted_date,
+                ];
+            });
 
-        // Format data untuk frontend
         $matchData = [
-        'id' => $match->id,
-        'league' => $match->league,
-        'date' => $match->formatted_date,
-        'time' => $match->formatted_time,
-        'venue' => $match->venue,
-        'status' => $match->status,
-        'team1' => [
-            'id' => $match->team1->id,
-            'name' => $match->team1->name,
-            'logo' => $this->normalizeLogoPath($match->team1->logo, $match->team1->name)
-        ],
-        'team2' => [
-            'id' => $match->team2->id,
-            'name' => $match->team2->name,
-            'logo' => $this->normalizeLogoPath($match->team2->logo, $match->team2->name)
-        ],
-        'score' => $calculatedScore ?? $match->score,
-        'quarters' => $quarters,
-        'stats' => $stats,
-        'boxScoreTeam1' => $match->boxScoreTeam1(),
-        'boxScoreTeam2' => $match->boxScoreTeam2(),
-    ];
+            'id' => $match->id,
+            'league' => $match->league,
+            'date' => $match->formatted_date,
+            'time' => $match->formatted_time,
+            'venue' => $match->venue,
+            'status' => $match->status,
+            'team1' => [
+                'id' => $match->team1->id,
+                'name' => $match->team1->name,
+                'logo' => $this->normalizeLogoPath($match->team1->logo, $match->team1->name)
+            ],
+            'team2' => [
+                'id' => $match->team2->id,
+                'name' => $match->team2->name,
+                'logo' => $this->normalizeLogoPath($match->team2->logo, $match->team2->name)
+            ],
+            'score' => $calculatedScore ?? $match->score,
+            'quarters' => $quarters,
+            'stats' => $stats,
+            'boxScoreTeam1' => $match->boxScoreTeam1(),
+            'boxScoreTeam2' => $match->boxScoreTeam2(),
+        ];
 
-    return Inertia::render('MatchPage/MatchDetail', [
-        'auth' => [
-            'client' => auth('client')->user()
-        ],
-        'match' => $matchData,
-        'matchHighlights' => $matchHighlights,
-        'relatedNews' => $relatedNews,
-    ]);
-}
+        return Inertia::render('MatchPage/MatchDetail', [
+            'auth' => [
+                'client' => auth('client')->user()
+            ],
+            'match' => $matchData,
+            'matchHighlights' => $matchHighlights,
+            'relatedNews' => $relatedNews,
+        ]);
+    }
 
     /**
      * Get matches by date (untuk AJAX request)
@@ -366,73 +363,73 @@ $matchHighlights = MatchHighlight::where('game_id', $id)
     {
         $date = $request->input('date');
         $matches = Game::with(['team1', 'team2'])
-        ->whereDate('date', $date)
-        ->orderBy('time', 'asc')
-        ->get()
-        ->map(function ($match) {
-            return [
-                'id' => $match->id,
-                'type' => $match->status,
-                'league' => $match->league,
-                'date' => $match->formatted_date,
-                'time' => $match->formatted_time,
-                'team1' => [
-                    'name' => $match->team1->name,
-                    'logo' => $this->normalizeLogoPath($match->team1->logo, $match->team1->name)
-                ],
-                'team2' => [
-                    'name' => $match->team2->name,
-                    'logo' => $this->normalizeLogoPath($match->team2->logo, $match->team2->name)
-                ],
-                'score' => $match->score
-            ];
-        });
+            ->whereDate('date', $date)
+            ->orderBy('time', 'asc')
+            ->get()
+            ->map(function ($match) {
+                return [
+                    'id' => $match->id,
+                    'type' => $match->status,
+                    'league' => $match->league,
+                    'date' => $match->formatted_date,
+                    'time' => $match->formatted_time,
+                    'team1' => [
+                        'name' => $match->team1->name,
+                        'logo' => $this->normalizeLogoPath($match->team1->logo, $match->team1->name)
+                    ],
+                    'team2' => [
+                        'name' => $match->team2->name,
+                        'logo' => $this->normalizeLogoPath($match->team2->logo, $match->team2->name)
+                    ],
+                    'score' => $match->score
+                ];
+            });
 
-    return response()->json([
-        'success' => true,
-        'matches' => $matches
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'matches' => $matches
+        ]);
+    }
 
-/**
- * Search matches
- */
-public function search(Request $request)
-{
-    $query = $request->input('query');
+    /**
+     * Search matches
+     */
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
 
-    $results = Game::with(['team1', 'team2'])
-        ->search($query)
-        ->orderBy('date', 'desc')
-        ->limit(10)
-        ->get()
-        ->map(function ($match) {
-            return [
-                'id' => $match->id,
-                'league' => $match->league,
-                'date' => $match->formatted_date,
-                'team1' => $match->team1->name,
-                'team2' => $match->team2->name,
-                'score' => $match->score
-            ];
-        });
+        $results = Game::with(['team1', 'team2'])
+            ->search($query)
+            ->orderBy('date', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($match) {
+                return [
+                    'id' => $match->id,
+                    'league' => $match->league,
+                    'date' => $match->formatted_date,
+                    'team1' => $match->team1->name,
+                    'team2' => $match->team2->name,
+                    'score' => $match->score
+                ];
+            });
 
-    return response()->json([
-        'success' => true,
-        'results' => $results
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'results' => $results
+        ]);
+    }
 
-/**
- * Get match statistics
- */
-public function getStats($id)
-{
-    $match = Game::findOrFail($id);
+    /**
+     * Get match statistics
+     */
+    public function getStats($id)
+    {
+        $match = Game::findOrFail($id);
 
-    return response()->json([
-        'success' => true,
-        'stats' => $match->stats
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'stats' => $match->stats
+        ]);
+    }
 }
