@@ -17,7 +17,7 @@ class BookingController extends Controller
     {
         $weekOffset = $request->get('week', 0);
         $selectedVenueType = $request->get('venue', 'pvj');
-        
+
         $venues = [
             'cibadak_a' => [
                 'id' => 1,
@@ -56,7 +56,7 @@ class BookingController extends Controller
                     'Lapangan tidak bertanggung jawab atas kehilangan barang pribadi.',
                 ],
             ],
-            
+
             'cibadak_b' => [
                 'id' => 2,
                 'venue_type' => 'cibadak_b',
@@ -91,7 +91,7 @@ class BookingController extends Controller
                     'Customer wajib dalam kondisi sehat.',
                 ],
             ],
-            
+
             'pvj' => [
                 'id' => 3,
                 'venue_type' => 'pvj',
@@ -128,7 +128,7 @@ class BookingController extends Controller
                     'Pihak lapangan tidak bertanggung jawab atas kecelakaan akibat kelalaian pemain.',
                 ],
             ],
-            
+
             'urban' => [
                 'id' => 4,
                 'venue_type' => 'urban',
@@ -168,29 +168,30 @@ class BookingController extends Controller
                 ],
             ],
         ];
-        
+
         $venue = $venues[$selectedVenueType] ?? $venues['pvj'];
         $schedules = $this->generateSchedules($weekOffset);
 
         // ✅ UPDATE: Ambil review dengan 3 aspek rating
         $reviews = Review::with('client:id,name,profile_image')
+            ->approved() // ← TAMBAHKAN INI
             ->latest()
             ->take(8)
             ->get()
-            ->map(function($review) {
+            ->map(function ($review) {
                 return [
                     'id' => $review->id,
                     'client_name' => $review->client->name,
                     'client_profile_image' => $review->client->profile_image,
-                    'rating' => $review->rating, // Rating rata-rata (untuk backward compatibility)
-                    'rating_facilities' => $review->rating_facilities,      // ✅ BARU
-                    'rating_hospitality' => $review->rating_hospitality,    // ✅ BARU
-                    'rating_cleanliness' => $review->rating_cleanliness,    // ✅ BARU
+                    'rating' => $review->rating,
+                    'rating_facilities' => $review->rating_facilities,
+                    'rating_hospitality' => $review->rating_hospitality,
+                    'rating_cleanliness' => $review->rating_cleanliness,
                     'comment' => $review->comment,
                     'created_at' => $review->created_at->diffForHumans(),
                 ];
             });
-        
+
         return Inertia::render('HomePage/Booking/Booking', [
             'auth' => [
                 'client' => Auth::guard('client')->user()
@@ -207,13 +208,13 @@ class BookingController extends Controller
     {
         $schedules = [];
         $startDate = Carbon::now()->startOfWeek()->addWeeks((int)$weekOffset);
-        
+
         $days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        
+
         for ($i = 0; $i < 7; $i++) {
             $date = $startDate->copy()->addDays($i);
             $dayName = $days[$date->dayOfWeek];
-            
+
             $schedules[] = [
                 'date' => $date->format('Y-m-d'),
                 'day_name' => $dayName,
@@ -224,7 +225,7 @@ class BookingController extends Controller
                 'is_past' => $date->lt(Carbon::today()),
             ];
         }
-        
+
         return $schedules;
     }
 
@@ -232,7 +233,7 @@ class BookingController extends Controller
     {
         $date = $request->input('date');
         $venueType = $request->input('venue_type', 'indoor');
-        
+
         $allTimeSlots = [
             ['time' => '06.00 - 08.00', 'duration' => 120, 'price' => 350000],
             ['time' => '08.00 - 10.00', 'duration' => 120, 'price' => 350000],
@@ -247,13 +248,13 @@ class BookingController extends Controller
 
         $bookedSlots = BookedTimeSlot::where('date', $date)
             ->where('venue_type', $venueType)
-            ->whereHas('booking', function($query) {
+            ->whereHas('booking', function ($query) {
                 $query->whereIn('status', ['pending', 'confirmed']);
             })
             ->pluck('time_slot')
             ->toArray();
 
-        $timeSlots = array_map(function($slot) use ($bookedSlots) {
+        $timeSlots = array_map(function ($slot) use ($bookedSlots) {
             $slot['status'] = in_array($slot['time'], $bookedSlots) ? 'booked' : 'available';
             return $slot;
         }, $allTimeSlots);
@@ -295,21 +296,21 @@ class BookingController extends Controller
             $alreadyBooked = BookedTimeSlot::where('date', $validated['date'])
                 ->where('venue_type', $validated['venue_type'])
                 ->whereIn('time_slot', $requestedSlots)
-                ->whereHas('booking', function($query) {
+                ->whereHas('booking', function ($query) {
                     $query->whereIn('status', ['pending', 'confirmed']);
                 })
                 ->exists();
 
             if ($alreadyBooked) {
                 DB::rollBack();
-                
+
                 if ($request->expectsJson() || $request->is('api/*')) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Maaf, ada slot waktu yang sudah dibooking oleh orang lain. Silakan pilih slot waktu lain.'
                     ], 422);
                 }
-                
+
                 return back()->withErrors([
                     'message' => 'Maaf, ada slot waktu yang sudah dibooking oleh orang lain. Silakan pilih slot waktu lain.'
                 ]);
@@ -355,17 +356,16 @@ class BookingController extends Controller
                     'booking_id' => $booking->id,
                 ]
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Terjadi kesalahan saat memproses booking: ' . $e->getMessage()
                 ], 500);
             }
-            
+
             return back()->withErrors([
                 'message' => 'Terjadi kesalahan saat memproses booking: ' . $e->getMessage()
             ]);
@@ -433,16 +433,17 @@ class BookingController extends Controller
             $review = Review::create([
                 'client_id' => Auth::guard('client')->id(),
                 'booking_id' => $lastBooking->id,
-                'rating' => $averageRating,                             // Rating rata-rata
-                'rating_facilities' => $validated['rating_facilities'],     // ✅ BARU
-                'rating_hospitality' => $validated['rating_hospitality'],   // ✅ BARU
-                'rating_cleanliness' => $validated['rating_cleanliness'],   // ✅ BARU
+                'rating' => $averageRating,
+                'rating_facilities' => $validated['rating_facilities'],
+                'rating_hospitality' => $validated['rating_hospitality'],
+                'rating_cleanliness' => $validated['rating_cleanliness'],
                 'comment' => $validated['comment'],
+                'is_approved' => false, // ✅ Default pending approval
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Terima kasih! Ulasan Anda berhasil ditambahkan.',
+                'message' => 'Terima kasih! Ulasan Anda akan ditampilkan setelah diverifikasi oleh admin.', // ✅ UPDATE MESSAGE
                 'review' => [
                     'id' => $review->id,
                     'client_name' => Auth::guard('client')->user()->name,
@@ -454,7 +455,6 @@ class BookingController extends Controller
                     'created_at' => 'Baru saja',
                 ]
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -468,19 +468,21 @@ class BookingController extends Controller
      */
     public function getReviews()
     {
+        // ✅ UPDATE: Hanya ambil approved reviews
         $reviews = Review::with('client:id,name,profile_image')
+            ->approved() // ← TAMBAHKAN INI
             ->latest()
             ->take(8)
             ->get()
-            ->map(function($review) {
+            ->map(function ($review) {
                 return [
                     'id' => $review->id,
                     'client_name' => $review->client->name,
                     'client_profile_image' => $review->client->profile_image,
                     'rating' => $review->rating,
-                    'rating_facilities' => $review->rating_facilities,      // ✅ BARU
-                    'rating_hospitality' => $review->rating_hospitality,    // ✅ BARU
-                    'rating_cleanliness' => $review->rating_cleanliness,    // ✅ BARU
+                    'rating_facilities' => $review->rating_facilities,
+                    'rating_hospitality' => $review->rating_hospitality,
+                    'rating_cleanliness' => $review->rating_cleanliness,
                     'comment' => $review->comment,
                     'created_at' => $review->created_at->diffForHumans(),
                 ];

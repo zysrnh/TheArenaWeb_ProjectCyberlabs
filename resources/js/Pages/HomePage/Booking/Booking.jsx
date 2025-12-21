@@ -732,13 +732,14 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                 <div className="grid md:grid-cols-2 gap-6">
                   {reviewsList.map((review) => (
                     <div key={review.id} className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border border-white/20">
-                      <div className="flex items-start gap-4 mb-4">
+                      {/* Header: Profile + Name + Time */}
+                      <div className="flex items-start gap-4 mb-5">
                         {/* Profile Image atau Inisial */}
                         {review.client_profile_image ? (
                           <img
                             src={`/storage/${review.client_profile_image}`}
                             alt={review.client_name}
-                            className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-[#ffd22f]"
+                            className="w-14 h-14 rounded-full object-cover flex-shrink-0 ring-2 ring-[#ffd22f]"
                             onError={(e) => {
                               e.target.style.display = 'none';
                               e.target.nextElementSibling.style.display = 'flex';
@@ -746,7 +747,7 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                           />
                         ) : null}
                         <div
-                          className="w-12 h-12 rounded-full bg-[#ffd22f] flex items-center justify-center flex-shrink-0"
+                          className="w-14 h-14 rounded-full bg-[#ffd22f] flex items-center justify-center flex-shrink-0"
                           style={{ display: review.client_profile_image ? 'none' : 'flex' }}
                         >
                           <span className="text-[#013064] font-bold text-xl">
@@ -754,49 +755,67 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                           </span>
                         </div>
 
-                        {/* Info Review */}
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-white font-semibold text-lg">{review.client_name}</p>
-                            <span className="text-white/50 text-xs">{review.created_at}</span>
-                          </div>
+                        {/* Name + Time */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-bold text-lg mb-1">{review.client_name}</p>
+                          <span className="text-white/50 text-sm">{review.created_at}</span>
+                        </div>
+                      </div>
 
-                          {/* ✅ Rating Details - 3 Aspek */}
-                          <div className="space-y-1 mb-3">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-white/70">Fasilitas</span>
-                              <div className="flex gap-0.5">
-                                {[...Array(5)].map((_, i) => (
-                                  <span key={i} className={`text-sm ${i < review.rating_facilities ? 'text-[#ffd22f]' : 'text-white/20'}`}>
-                                    ★
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-white/70">Keramahan</span>
-                              <div className="flex gap-0.5">
-                                {[...Array(5)].map((_, i) => (
-                                  <span key={i} className={`text-sm ${i < review.rating_hospitality ? 'text-[#ffd22f]' : 'text-white/20'}`}>
-                                    ★
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-white/70">Kebersihan</span>
-                              <div className="flex gap-0.5">
-                                {[...Array(5)].map((_, i) => (
-                                  <span key={i} className={`text-sm ${i < review.rating_cleanliness ? 'text-[#ffd22f]' : 'text-white/20'}`}>
-                                    ★
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
+                      {/* Rating Details - 3 Aspek dengan styling lebih baik */}
+                      <div className="space-y-3 mb-5 bg-white/5 rounded-lg p-4">
+                        {/* Fasilitas */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-semibold text-sm min-w-[90px]">Fasilitas</span>
+                          <div className="flex gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-xl ${i < review.rating_facilities ? 'text-[#ffd22f]' : 'text-white/20'}`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Keramahan */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-semibold text-sm min-w-[90px]">Keramahan</span>
+                          <div className="flex gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-xl ${i < review.rating_hospitality ? 'text-[#ffd22f]' : 'text-white/20'}`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Kebersihan */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-semibold text-sm min-w-[90px]">Kebersihan</span>
+                          <div className="flex gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-xl ${i < review.rating_cleanliness ? 'text-[#ffd22f]' : 'text-white/20'}`}
+                              >
+                                ★
+                              </span>
+                            ))}
                           </div>
                         </div>
                       </div>
-                      <p className="text-white/90 leading-relaxed">{review.comment}</p>
+
+                      {/* Comment dengan divider */}
+                      <div className="border-t border-white/10 pt-4">
+                        <p className="text-white/90 leading-relaxed text-sm">
+                          {review.comment}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
