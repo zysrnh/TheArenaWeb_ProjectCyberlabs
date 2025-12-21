@@ -29,7 +29,7 @@ export default function Profile() {
     profile_image: null,
   });
 
-  
+
 
   // Tampilkan notifikasi jika ada flash message
   useEffect(() => {
@@ -389,21 +389,21 @@ export default function Profile() {
                               {/* TAMBAHAN: TOMBOL BAYAR & CANCEL */}
                               <div className="flex gap-2">
                                 {booking.can_pay && (
-  <form 
-    action={`/payment/process/${booking.id}`} 
-    method="POST"
-    className="flex-1 md:flex-none"
-  >
-    <input type="hidden" name="_token" value={document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')} />
-    <button
-      type="submit"
-      className="w-full flex items-center justify-center gap-2 px-3 md:px-4 py-2 bg-[#ffd22f] text-[#013064] rounded hover:bg-[#ffe066] transition font-semibold text-sm"
-    >
-      <CreditCard className="w-4 h-4" />
-      <span>Bayar</span>
-    </button>
-  </form>
-)}
+                                  <form
+                                    action={`/payment/process/${booking.id}`}
+                                    method="POST"
+                                    className="flex-1 md:flex-none"
+                                  >
+                                    <input type="hidden" name="_token" value={document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')} />
+                                    <button
+                                      type="submit"
+                                      className="w-full flex items-center justify-center gap-2 px-3 md:px-4 py-2 bg-[#ffd22f] text-[#013064] rounded hover:bg-[#ffe066] transition font-semibold text-sm"
+                                    >
+                                      <CreditCard className="w-4 h-4" />
+                                      <span>Bayar</span>
+                                    </button>
+                                  </form>
+                                )}
                                 {booking.can_cancel && (
                                   <button
                                     onClick={() => handleCancelBooking(booking)}

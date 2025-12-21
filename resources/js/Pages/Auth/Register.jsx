@@ -8,10 +8,11 @@ export default function Register() {
   const [notification, setNotification] = useState(null);
   
   const { data, setData, post, processing, errors } = useForm({
-    username: "",
-    email: "",
-    password: "",
-  });
+  username: "",
+  email: "",
+  phone: "",  // ← TAMBAH INI
+  password: "",
+});
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -272,6 +273,28 @@ export default function Register() {
                   </p>
                 )}
               </div>
+              <div className="animate-fade-in-up stagger-3">
+  <label className="block text-[#ffd22f] text-sm font-medium mb-2">
+    Nomor Telepon <span className="text-red-400">*</span>
+  </label>
+  <div className="relative">
+    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+    <input
+      type="tel"
+      placeholder="08123456789"
+      value={data.phone}
+      onChange={(e) => setData('phone', e.target.value)}
+      required
+      className="w-full pl-12 pr-4 py-3 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ffd22f] transition"
+    />
+  </div>
+  {errors.phone && (
+    <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+      <AlertCircle className="w-3 h-3" />
+      {errors.phone}
+    </p>
+  )}
+</div>
 
               {/* Password Field */}
               <div className="animate-fade-in-up stagger-4">

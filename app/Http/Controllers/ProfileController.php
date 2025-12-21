@@ -303,38 +303,40 @@ class ProfileController extends Controller
     /**
      * Update profile client
      */
-    public function update(Request $request)
-    {
-        $client = Auth::guard('client')->user();
-        
-        if (!$client) {
-            return redirect()->route('login')->withErrors(['error' => 'Silakan login terlebih dahulu']);
-        }
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'province' => 'nullable|string|max:255',
-            'city' => 'nullable|string|max:255',
-            'address' => 'nullable|string',
-            'phone' => 'nullable|string|max:20',
-            'gender' => 'nullable|string|in:Laki-laki,Perempuan',
-            'birth_date' => 'nullable|date',
-            'profile_image' => 'nullable|image|max:2048',
-        ]);
-
-        if ($request->hasFile('profile_image')) {
-            if ($client->profile_image) {
-                Storage::disk('public')->delete($client->profile_image);
-            }
-
-            $path = $request->file('profile_image')->store('profile-images', 'public');
-            $validated['profile_image'] = $path;
-        }
-
-        $client->update($validated);
-
-        return back()->with('success', 'Profil berhasil diperbarui!');
+    // ✅ UPDATE validation di ProfileController->update()
+public function update(Request $request)
+{
+    $client = Auth::guard('client')->user();
+    
+    if (!$client) {
+        return redirect()->route('login')->withErrors(['error' => 'Silakan login terlebih dahulu']);
     }
+
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',  // ← WAJIB
+        'email' => 'required|email|max:255|unique:clients,email,' . $client->id,  // ← WAJIB & UNIQUE
+        'phone' => 'required|string|max:20',  // ← WAJIB (POINT 8)
+        'province' => 'nullable|string|max:255',
+        'city' => 'nullable|string|max:255',
+        'address' => 'nullable|string',
+        'gender' => 'nullable|string|in:Laki-laki,Perempuan',
+        'birth_date' => 'nullable|date',
+        'profile_image' => 'nullable|image|max:2048',
+    ]);
+
+    if ($request->hasFile('profile_image')) {
+        if ($client->profile_image) {
+            Storage::disk('public')->delete($client->profile_image);
+        }
+
+        $path = $request->file('profile_image')->store('profile-images', 'public');
+        $validated['profile_image'] = $path;
+    }
+
+    $client->update($validated);
+
+    return back()->with('success', 'Profil berhasil diperbarui!');
+}
 
     /**
      * ✅ Cancel booking - UPDATED UNTUK PAYMENT

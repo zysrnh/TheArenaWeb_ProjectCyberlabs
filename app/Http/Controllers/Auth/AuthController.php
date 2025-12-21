@@ -50,18 +50,29 @@ class AuthController extends Controller
         ]);
     }
 
-    // Proses register untuk client
+    // ✅ Proses register untuk client - DENGAN PHONE MANDATORY
     public function register(Request $request)
     {
         $validated = $request->validate([
             'username' => 'required|string|max:255|unique:clients,name',
             'email' => 'required|string|email|max:255|unique:clients',
+            'phone' => 'required|string|max:20',  // ← TAMBAH INI (POINT 9)
             'password' => 'required|string|min:8',
+        ], [
+            'username.required' => 'Username wajib diisi',
+            'username.unique' => 'Username sudah digunakan',
+            'email.required' => 'Email wajib diisi',
+            'email.email' => 'Format email tidak valid',
+            'email.unique' => 'Email sudah terdaftar',
+            'phone.required' => 'Nomor telepon wajib diisi',  // ← TAMBAH INI
+            'password.required' => 'Password wajib diisi',
+            'password.min' => 'Password minimal 8 karakter',
         ]);
 
         $client = Client::create([
             'name' => $validated['username'],
             'email' => $validated['email'],
+            'phone' => $validated['phone'],  // ← TAMBAH INI
             'password' => bcrypt($validated['password']),
         ]);
 
