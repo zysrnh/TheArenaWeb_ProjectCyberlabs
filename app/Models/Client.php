@@ -14,13 +14,13 @@ class Client extends Authenticatable
         'name',
         'email',
         'password',
-        'province',          // TAMBAHKAN
-        'city',              // TAMBAHKAN
-        'address',           // TAMBAHKAN
-        'phone',             // TAMBAHKAN
-        'gender',            // TAMBAHKAN
-        'birth_date',        // TAMBAHKAN
-        'profile_image',     // TAMBAHKAN
+        'province',
+        'city',
+        'address',
+        'phone',
+        'gender',
+        'birth_date',
+        'profile_image',
     ];
 
     protected $hidden = [
@@ -33,19 +33,23 @@ class Client extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'birth_date' => 'date', // TAMBAHKAN untuk casting tanggal
+            'birth_date' => 'date',
         ];
     }
-    public function bookings()
-{
-    return $this->hasMany(Booking::class);
 
-}
-/**
- * Relasi ke Reviews
- */
-public function reviews()
-{
-    return $this->hasMany(Review::class);
-}
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    // ✅ TAMBAHKAN RELASI INI
+    public function pageVisits()
+    {
+        return $this->hasMany(PageVisit::class);
+    }
 }

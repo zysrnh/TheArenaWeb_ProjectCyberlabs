@@ -90,6 +90,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                \App\Http\Middleware\TrackPageVisit::class, // ✅ TAMBAHKAN INI
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
