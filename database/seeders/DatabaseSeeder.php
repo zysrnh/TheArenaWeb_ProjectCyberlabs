@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'super-admin@alcomedia.id'],
             [
                 'name' => 'Super Admin',
-                'password' => bcrypt('s'),
+                'password' => bcrypt('4Lc0@dm1nistrat0r0917'),
             ]
         );
         $admin->assignRole('super_admin');

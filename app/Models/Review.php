@@ -16,6 +16,9 @@ class Review extends Model
         'client_id',
         'booking_id',
         'rating',
+        'rating_facilities',    // ✅ Rating Fasilitas
+        'rating_hospitality',   // ✅ Rating Keramahan
+        'rating_cleanliness',   // ✅ Rating Kebersihan
         'comment',
     ];
 
@@ -24,9 +27,20 @@ class Review extends Model
      */
     protected $casts = [
         'rating' => 'integer',
+        'rating_facilities' => 'integer',
+        'rating_hospitality' => 'integer',
+        'rating_cleanliness' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * ✅ Get average rating dari 3 aspek
+     */
+    public function getAverageRatingAttribute()
+    {
+        return round(($this->rating_facilities + $this->rating_hospitality + $this->rating_cleanliness) / 3, 1);
+    }
 
     /**
      * Relasi ke Client (user yang kasih review)

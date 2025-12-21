@@ -6,7 +6,7 @@ import Footer from "../../../Components/Footer";
 
 export default function Booking({ auth, venue, venues = {}, schedules = [], currentWeek = 0, reviews = [] }) {
   const validSchedules = Array.isArray(schedules) ? schedules : [];
-const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedDate, setSelectedDate] = useState('');
   const [timeSlots, setTimeSlots] = useState([]);
   const [selectedTimeSlots, setSelectedTimeSlots] = useState([]);
@@ -19,7 +19,9 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [reviewsList, setReviewsList] = useState(reviews);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewForm, setReviewForm] = useState({
-    rating: 5,
+    rating_facilities: 5,
+    rating_hospitality: 5,
+    rating_cleanliness: 5,
     comment: ''
   });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
@@ -64,7 +66,12 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
       if (data.success) {
         setShowReviewModal(false);
-        setReviewForm({ rating: 5, comment: '' });
+        setReviewForm({
+          rating_facilities: 5,
+          rating_hospitality: 5,
+          rating_cleanliness: 5,
+          comment: ''
+        });
         fetchReviews();
         setNotification({
           type: 'success',
@@ -388,7 +395,7 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
                 <div className="relative slider-container">
                   {/* Image Container */}
                   <div className="aspect-square overflow-hidden rounded-lg relative">
-                    <div 
+                    <div
                       className="flex transition-transform duration-500 ease-out h-full"
                       style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
                     >
@@ -402,7 +409,7 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
                         </div>
                       ))}
                     </div>
-                    
+
                     {/* Navigation Arrows */}
                     {currentImageIndex > 0 && (
                       <button
@@ -412,7 +419,7 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
                         <ChevronLeft className="w-6 h-6 text-[#013064]" />
                       </button>
                     )}
-                    
+
                     {currentImageIndex < (venue.images?.length - 1 || 0) && (
                       <button
                         onClick={() => setCurrentImageIndex(prev => prev + 1)}
@@ -421,24 +428,23 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
                         <ChevronRight className="w-6 h-6 text-[#013064]" />
                       </button>
                     )}
-                    
+
                     {/* Image Counter */}
                     <div className="absolute bottom-4 right-4 bg-[#013064]/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm font-semibold">
                       {currentImageIndex + 1} / {venue.images?.length || 0}
                     </div>
                   </div>
-                  
+
                   {/* Dots Indicator */}
                   <div className="flex justify-center gap-2 mt-4">
                     {venue.images?.slice(0, 5).map((_, idx) => (
                       <button
                         key={idx}
                         onClick={() => setCurrentImageIndex(idx)}
-                        className={`transition-all duration-300 rounded-full ${
-                          idx === currentImageIndex 
-                            ? 'w-8 h-2 bg-[#ffd22f]' 
-                            : 'w-2 h-2 bg-white/40 hover:bg-white/60'
-                        }`}
+                        className={`transition-all duration-300 rounded-full ${idx === currentImageIndex
+                          ? 'w-8 h-2 bg-[#ffd22f]'
+                          : 'w-2 h-2 bg-white/40 hover:bg-white/60'
+                          }`}
                       />
                     ))}
                   </div>
@@ -495,8 +501,8 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
                               onClick={() => handleWeekChange('prev')}
                               disabled={weekOffset === 0}
                               className={`p-2 rounded-full transition ${weekOffset === 0
-                                  ? 'bg-white/20 cursor-not-allowed'
-                                  : 'bg-white hover:bg-[#ffd22f]'
+                                ? 'bg-white/20 cursor-not-allowed'
+                                : 'bg-white hover:bg-[#ffd22f]'
                                 }`}
                             >
                               <ChevronLeft className={`w-4 h-4 sm:w-5 sm:h-5 ${weekOffset === 0 ? 'text-white/50' : 'text-[#013064]'}`} />
@@ -520,10 +526,10 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
                               onClick={() => !schedule.is_past && setSelectedDate(schedule.date)}
                               disabled={schedule.is_past}
                               className={`flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-none transition ${schedule.is_past
-                                  ? 'bg-gray-400 cursor-not-allowed opacity-50'
-                                  : selectedDate === schedule.date
-                                    ? "bg-[#ffd22f] text-[#013064]"
-                                    : "bg-white text-[#013064] hover:bg-[#ffd22f]"
+                                ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                                : selectedDate === schedule.date
+                                  ? "bg-[#ffd22f] text-[#013064]"
+                                  : "bg-white text-[#013064] hover:bg-[#ffd22f]"
                                 }`}
                             >
                               <span className="text-[10px] sm:text-xs mb-1">{schedule.day_name}</span>
@@ -548,8 +554,8 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
                                   });
                                 }}
                                 className={`p-6 rounded-none relative transition ${isSelected
-                                    ? 'bg-[#ffd22f] border-2 border-[#ffd22f]'
-                                    : 'bg-white border-2 border-white hover:border-[#ffd22f]'
+                                  ? 'bg-[#ffd22f] border-2 border-[#ffd22f]'
+                                  : 'bg-white border-2 border-white hover:border-[#ffd22f]'
                                   }`}
                               >
                                 {isSelected && (
@@ -590,10 +596,10 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
                                   onClick={() => handleTimeSlotToggle(slot)}
                                   disabled={isBooked}
                                   className={`p-4 rounded-none transition relative ${isBooked
-                                      ? "bg-[#8B9BB3] border-2 border-[#8B9BB3] cursor-not-allowed"
-                                      : isSelected
-                                        ? "bg-[#ffd22f] border-2 border-[#ffd22f]"
-                                        : "bg-white border-2 border-white hover:border-[#ffd22f]"
+                                    ? "bg-[#8B9BB3] border-2 border-[#8B9BB3] cursor-not-allowed"
+                                    : isSelected
+                                      ? "bg-[#ffd22f] border-2 border-[#ffd22f]"
+                                      : "bg-white border-2 border-white hover:border-[#ffd22f]"
                                     }`}
                                 >
                                   {isSelected && !isBooked && (
@@ -687,8 +693,8 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
                       onClick={handleBooking}
                       disabled={selectedTimeSlots.length === 0}
                       className={`w-full py-3 rounded-lg font-bold text-base sm:text-lg transition ${selectedTimeSlots.length === 0
-                          ? "bg-white/20 cursor-not-allowed"
-                          : "bg-[#ffd22f] text-[#013064] hover:bg-[#ffe066]"
+                        ? "bg-white/20 cursor-not-allowed"
+                        : "bg-[#ffd22f] text-[#013064] hover:bg-[#ffe066]"
                         }`}
                     >
                       Booking
@@ -727,20 +733,18 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
                   {reviewsList.map((review) => (
                     <div key={review.id} className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border border-white/20">
                       <div className="flex items-start gap-4 mb-4">
-                        {/* Tampilkan Profile Image atau Inisial */}
+                        {/* Profile Image atau Inisial */}
                         {review.client_profile_image ? (
                           <img
                             src={`/storage/${review.client_profile_image}`}
                             alt={review.client_name}
                             className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-[#ffd22f]"
                             onError={(e) => {
-                              // Fallback ke inisial jika gambar gagal load
                               e.target.style.display = 'none';
                               e.target.nextElementSibling.style.display = 'flex';
                             }}
                           />
                         ) : null}
-                        {/* Fallback Inisial */}
                         <div
                           className="w-12 h-12 rounded-full bg-[#ffd22f] flex items-center justify-center flex-shrink-0"
                           style={{ display: review.client_profile_image ? 'none' : 'flex' }}
@@ -752,18 +756,43 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
                         {/* Info Review */}
                         <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center justify-between mb-2">
                             <p className="text-white font-semibold text-lg">{review.client_name}</p>
+                            <span className="text-white/50 text-xs">{review.created_at}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex gap-0.5">
-                              {[...Array(5)].map((_, i) => (
-                                <span key={i} className={`text-base ${i < review.rating ? 'text-[#ffd22f]' : 'text-white/20'}`}>
-                                  ★
-                                </span>
-                              ))}
+
+                          {/* ✅ Rating Details - 3 Aspek */}
+                          <div className="space-y-1 mb-3">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-white/70">Fasilitas</span>
+                              <div className="flex gap-0.5">
+                                {[...Array(5)].map((_, i) => (
+                                  <span key={i} className={`text-sm ${i < review.rating_facilities ? 'text-[#ffd22f]' : 'text-white/20'}`}>
+                                    ★
+                                  </span>
+                                ))}
+                              </div>
                             </div>
-                            <span className="text-white/50 text-xs">• {review.created_at}</span>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-white/70">Keramahan</span>
+                              <div className="flex gap-0.5">
+                                {[...Array(5)].map((_, i) => (
+                                  <span key={i} className={`text-sm ${i < review.rating_hospitality ? 'text-[#ffd22f]' : 'text-white/20'}`}>
+                                    ★
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-white/70">Kebersihan</span>
+                              <div className="flex gap-0.5">
+                                {[...Array(5)].map((_, i) => (
+                                  <span key={i} className={`text-sm ${i < review.rating_cleanliness ? 'text-[#ffd22f]' : 'text-white/20'}`}>
+                                    ★
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -896,7 +925,7 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
       {/* Modal Review */}
       {showReviewModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-[#013064]">Tulis Ulasan</h3>
               <button
@@ -907,20 +936,62 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
               </button>
             </div>
 
-            {/* Rating Stars */}
+            {/* Rating Fasilitas */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-[#013064] mb-2">
-                Rating
+                Fasilitas
               </label>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     type="button"
-                    onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                    onClick={() => setReviewForm({ ...reviewForm, rating_facilities: star })}
                     className="text-3xl transition hover:scale-110"
                   >
-                    <span className={star <= reviewForm.rating ? 'text-[#ffd22f]' : 'text-gray-300'}>
+                    <span className={star <= reviewForm.rating_facilities ? 'text-[#ffd22f]' : 'text-gray-300'}>
+                      ★
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Rating Keramahan */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-[#013064] mb-2">
+                Keramahan
+              </label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewForm({ ...reviewForm, rating_hospitality: star })}
+                    className="text-3xl transition hover:scale-110"
+                  >
+                    <span className={star <= reviewForm.rating_hospitality ? 'text-[#ffd22f]' : 'text-gray-300'}>
+                      ★
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Rating Kebersihan */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-[#013064] mb-2">
+                Kebersihan
+              </label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewForm({ ...reviewForm, rating_cleanliness: star })}
+                    className="text-3xl transition hover:scale-110"
+                  >
+                    <span className={star <= reviewForm.rating_cleanliness ? 'text-[#ffd22f]' : 'text-gray-300'}>
                       ★
                     </span>
                   </button>
@@ -971,8 +1042,7 @@ const [currentImageIndex, setCurrentImageIndex] = useState(0);
             </div>
           </div>
         </div>
-      )}
-    </>
+      )}    </>
   );
 }
 
