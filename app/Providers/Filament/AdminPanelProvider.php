@@ -19,7 +19,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-// Import Widgets
+// Import Existing Widgets
 use App\Filament\Admin\Widgets\ClientStatsWidget;
 use App\Filament\Admin\Widgets\LatestUsersWidget;
 use App\Filament\Admin\Widgets\BookingStatsWidget;
@@ -27,6 +27,10 @@ use App\Filament\Admin\Widgets\BookingRevenueChart;
 use App\Filament\Admin\Widgets\BookingStatusChart;
 use App\Filament\Admin\Widgets\PaymentMethodChart;
 use App\Filament\Admin\Widgets\LatestMessagesWidget;
+
+// ✅ TAMBAHKAN 3 IMPORT INI
+use App\Filament\Admin\Widgets\PageVisitStatsWidget;
+use App\Filament\Admin\Widgets\PageVisitChart;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -48,19 +52,14 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
-
-            // === CUSTOM CSS BACKGROUND ===
             ->renderHook(
                 'panels::body.start',
                 fn() => view('filament.custom.styles')
             )
-
-            // === CUSTOM LOGIN VIEW ===
             ->renderHook(
                 'panels::auth.login.form.after',
                 fn() => view('filament.auth.login')
             )
-
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
                 // User & Admin Stats (sort: 1)
@@ -72,13 +71,17 @@ class AdminPanelProvider extends PanelProvider
                 // Booking & Revenue Stats (sort: 3)
                 BookingStatsWidget::class,
                 
-                // Charts (sort: 4, 5)
+                // Charts (sort: 4, 5, 6)
                 BookingRevenueChart::class,
                 BookingStatusChart::class,
                 PaymentMethodChart::class,
                 
-                // Latest Messages (sort: 6) - DI PALING BAWAH
+                // Latest Messages (sort: 7)
                 LatestMessagesWidget::class,
+                
+                // ✅ TAMBAHKAN 3 WIDGET INI (sort: 8, 9, 10)
+                PageVisitStatsWidget::class,
+                PageVisitChart::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -90,7 +93,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
-                \App\Http\Middleware\TrackPageVisit::class, // ✅ TAMBAHKAN INI
+                \App\Http\Middleware\TrackPageVisit::class,
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
