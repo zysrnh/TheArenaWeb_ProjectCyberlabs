@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\LiveMatch;
 use App\Models\Game;
+use App\Models\News;
+use App\Models\Sponsor;
+use App\Models\Partner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
-use App\Models\News;
 
 class HomeController extends Controller
 {
@@ -29,6 +31,7 @@ class HomeController extends Controller
                         'date' => $item->formatted_date,
                     ];
                 });
+
             // Ambil 6 live matches terbaru yang aktif
             $liveMatches = LiveMatch::where('is_active', true)
                 ->orderBy('match_date', 'desc')
@@ -105,6 +108,23 @@ class HomeController extends Controller
                     ];
                 });
 
+            // ✅ TAMBAHAN BARU: Sponsors & Partners
+            $sponsors = Sponsor::active()->ordered()->get()->map(function ($sponsor) {
+                return [
+                    'id' => $sponsor->id,
+                    'name' => $sponsor->name,
+                    'image' => asset('storage/' . $sponsor->image),
+                ];
+            });
+
+            $partners = Partner::active()->ordered()->get()->map(function ($partner) {
+                return [
+                    'id' => $partner->id,
+                    'name' => $partner->name,
+                    'image' => asset('storage/' . $partner->image),
+                ];
+            });
+
             return Inertia::render('HomePage/HomePage', [
                 'auth' => [
                     'client' => Auth::guard('client')->user()
@@ -112,7 +132,9 @@ class HomeController extends Controller
                 'liveMatches' => $liveMatches,
                 'homeMatches' => $homeMatches,
                 'currentFilter' => $filter,
-                'newsForHome' => $newsForHome, // ← Tambahkan ini
+                'newsForHome' => $newsForHome,
+                'sponsors' => $sponsors,      // ✅ Tambahkan ini
+                'partners' => $partners,      // ✅ Tambahkan ini
             ]);
         } catch (\Exception $e) {
             // Log error untuk debugging
@@ -127,6 +149,9 @@ class HomeController extends Controller
                 'liveMatches' => [],
                 'homeMatches' => [],
                 'currentFilter' => 'all',
+                'newsForHome' => [],           // ✅ Tambahkan ini
+                'sponsors' => [],              // ✅ Tambahkan ini
+                'partners' => [],              // ✅ Tambahkan ini
             ]);
         }
     }

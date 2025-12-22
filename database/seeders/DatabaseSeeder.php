@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         // Jalankan RoleSeeder terlebih dahulu
         $this->call([
+            SponsorPartnerSeeder::class,
             RoleSeeder::class,
             // EventSeeder::class, // Komen karena tidak perlu
         ]);

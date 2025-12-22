@@ -7,12 +7,14 @@ import Contact from '../../Components/Contact';
 
 export default function HomePage() {
   // Destructure props dengan default values
-  const { 
-    auth, 
-    liveMatches = [], 
-    homeMatches = [], 
-    currentFilter = 'all',
-    newsForHome = [] // ← Tambahkan ini
+  const {
+  auth,
+  liveMatches = [],
+  homeMatches = [],
+  currentFilter = 'all',
+  newsForHome = [],
+  sponsors = [],        // ✅ TAMBAH INI
+  partners = []         // ✅ TAMBAH INI
 } = usePage().props;
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -287,63 +289,63 @@ export default function HomePage() {
 
         {/* Berita Seputar Basket Section - RESPONSIVE */}
         <div className="bg-[#013064] py-12 md:py-16 lg:py-20 px-4">
-  <div className="max-w-7xl mx-auto">
-    <div className="text-center mb-10 md:mb-16">
-      <p className="text-[#ffd22f] text-base md:text-xl lg:text-2xl font-semibold mb-2 md:mb-3">Berita</p>
-      <h2 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold">Berita Seputar Basket</h2>
-    </div>
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-10 md:mb-16">
+              <p className="text-[#ffd22f] text-base md:text-xl lg:text-2xl font-semibold mb-2 md:mb-3">Berita</p>
+              <h2 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold">Berita Seputar Basket</h2>
+            </div>
 
-    {newsForHome && newsForHome.length > 0 ? (
-      <>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
-          {newsForHome.map((news) => (
-            <Link key={news.id} href={`/berita/${news.id}`} className="block">
-              <div className="group cursor-pointer overflow-hidden relative h-[320px] md:h-[360px] lg:h-[380px]">
-                <img 
-                  src={news.image} 
-                  alt={news.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                  onError={(e) => {
-                    e.target.src = 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800';
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-                <span className="absolute top-3 left-3 bg-[#e74c3c] text-white px-2.5 py-1 text-xs font-semibold z-10">
-                  {news.category}
-                </span>
-                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5 text-white">
-                  <p className="text-gray-300 text-xs mb-2">{news.category} - {news.date}</p>
-                  <h3 className="text-white text-sm md:text-base font-bold mb-2 leading-tight line-clamp-2">
-                    {news.title}
-                  </h3>
-                  <p className="text-gray-200 text-xs mb-3 leading-relaxed line-clamp-2">
-                    {news.excerpt}
-                  </p>
-                  <span className="text-white text-xs font-semibold flex items-center gap-1.5 group-hover:text-[#ffd22f] transition">
-                    Lihat selengkapnya
-                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                  </span>
+            {newsForHome && newsForHome.length > 0 ? (
+              <>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
+                  {newsForHome.map((news) => (
+                    <Link key={news.id} href={`/berita/${news.id}`} className="block">
+                      <div className="group cursor-pointer overflow-hidden relative h-[320px] md:h-[360px] lg:h-[380px]">
+                        <img
+                          src={news.image}
+                          alt={news.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                        <span className="absolute top-3 left-3 bg-[#e74c3c] text-white px-2.5 py-1 text-xs font-semibold z-10">
+                          {news.category}
+                        </span>
+                        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5 text-white">
+                          <p className="text-gray-300 text-xs mb-2">{news.category} - {news.date}</p>
+                          <h3 className="text-white text-sm md:text-base font-bold mb-2 leading-tight line-clamp-2">
+                            {news.title}
+                          </h3>
+                          <p className="text-gray-200 text-xs mb-3 leading-relaxed line-clamp-2">
+                            {news.excerpt}
+                          </p>
+                          <span className="text-white text-xs font-semibold flex items-center gap-1.5 group-hover:text-[#ffd22f] transition">
+                            Lihat selengkapnya
+                            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
 
-        <div className="text-center">
-          <Link href="/berita">
-            <button className="bg-[#ffd22f] text-[#013064] px-8 md:px-10 py-2.5 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition">
-              Lihat Lebih Banyak
-            </button>
-          </Link>
+                <div className="text-center">
+                  <Link href="/berita">
+                    <button className="bg-[#ffd22f] text-[#013064] px-8 md:px-10 py-2.5 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition">
+                      Lihat Lebih Banyak
+                    </button>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-white text-xl">Belum ada berita tersedia</p>
+              </div>
+            )}
+          </div>
         </div>
-      </>
-    ) : (
-      <div className="text-center py-12">
-        <p className="text-white text-xl">Belum ada berita tersedia</p>
-      </div>
-    )}
-  </div>
-</div>
         {/* Promo Section - Hero Banner - RESPONSIVE */}
         <div className="relative h-[350px] md:h-[450px] lg:h-[500px] overflow-hidden">
           <img
@@ -460,8 +462,8 @@ export default function HomePage() {
                 <button
                   onClick={() => handleFilterChange('all')}
                   className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all ${filter === 'all'
-                      ? 'bg-[#ffd22f] text-[#013064]'
-                      : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+                    ? 'bg-[#ffd22f] text-[#013064]'
+                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
                     }`}
                 >
                   Semua
@@ -469,8 +471,8 @@ export default function HomePage() {
                 <button
                   onClick={() => handleFilterChange('live')}
                   className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all border-l-0 ${filter === 'live'
-                      ? 'bg-[#ffd22f] text-[#013064]'
-                      : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+                    ? 'bg-[#ffd22f] text-[#013064]'
+                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
                     }`}
                 >
                   Pertandingan Berlangsung
@@ -478,8 +480,8 @@ export default function HomePage() {
                 <button
                   onClick={() => handleFilterChange('upcoming')}
                   className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all border-l-0 ${filter === 'upcoming'
-                      ? 'bg-[#ffd22f] text-[#013064]'
-                      : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+                    ? 'bg-[#ffd22f] text-[#013064]'
+                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
                     }`}
                 >
                   Pertandingan Berikutnya
@@ -511,10 +513,10 @@ export default function HomePage() {
                           {/* Status Badge - Above League Name */}
                           <div className="mb-1.5">
                             <span className={`px-2.5 py-1 text-xs font-bold uppercase ${match.type === 'live'
-                                ? 'bg-red-600 text-white'
-                                : match.type === 'upcoming'
-                                  ? 'bg-green-600 text-white'
-                                  : 'bg-gray-600 text-white'
+                              ? 'bg-red-600 text-white'
+                              : match.type === 'upcoming'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-gray-600 text-white'
                               }`}>
                               {match.type === 'live' ? 'Live' : match.type === 'upcoming' ? 'Upcoming Match' : 'Selesai'}
                             </span>
@@ -688,88 +690,61 @@ export default function HomePage() {
           </div>
         </div>
         {/* Sponsor and Partners Section - RESPONSIVE */}
-        <div className="bg-[#013064] py-12 md:py-16 lg:py-20 px-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12 md:mb-16">
-              <p className="text-[#ffd22f] text-base md:text-xl lg:text-2xl font-semibold mb-2 md:mb-3">
-                Sponsor
-              </p>
-              <h2 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold">
-                Partner dan Sponsor Kami
-              </h2>
-            </div>
+<div className="bg-[#013064] py-12 md:py-16 lg:py-20 px-4">
+  <div className="max-w-7xl mx-auto">
+    <div className="text-center mb-12 md:mb-16">
+      <h2 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold">
+        Partner dan Sponsor Kami
+      </h2>
+    </div>
 
-            {/* Presented By Section */}
-            <div className="mb-16 md:mb-20">
-              <p className="text-[#ffd22f] text-center text-lg md:text-xl lg:text-2xl font-semibold mb-6 md:mb-8">
-                Presented By
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4 md:gap-6">
-                <div className="bg-white p-4 md:p-6 flex items-center justify-center w-full sm:w-48 md:w-55 h-48 md:h-55">
-                  <img src="/images/LIVIN.jpg" alt="Livin by Mandiri" className="max-w-full max-h-full object-contain" />
-                </div>
-                <div className="bg-white p-4 md:p-6 flex items-center justify-center w-full sm:w-48 md:w-55 h-48 md:h-55">
-                  <img src="/images/KUYMEDIA.png" alt="KUY! Media Group" className="max-w-full max-h-full object-contain" />
-                </div>
-              </div>
+    {/* Presented By Section (Sponsors) */}
+    {sponsors && sponsors.length > 0 && (
+      <div className="mb-16 md:mb-20">
+        <p className="text-[#ffd22f] text-center text-lg md:text-xl lg:text-2xl font-semibold mb-6 md:mb-8">
+          Presented By
+        </p>
+        <div className="flex flex-col sm:flex-row justify-center gap-6 md:gap-8 flex-wrap">
+          {sponsors.map((sponsor) => (
+            <div 
+              key={sponsor.id} 
+              className="bg-white p-8 md:p-12 flex items-center justify-center w-full sm:w-96 md:w-[440px] h-96 md:h-[440px] rounded-lg shadow-lg"
+            >
+              <img 
+                src={sponsor.image} 
+                alt={sponsor.name} 
+                className="max-w-full max-h-full object-contain" 
+              />
             </div>
-
-            {/* Official Partner Section */}
-            <div className="mb-16 md:mb-20">
-              <p className="text-[#ffd22f] text-center text-lg md:text-xl lg:text-2xl font-semibold mb-6 md:mb-8">Official Partner</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-6">
-                {[
-                  { src: "/images/Eve.jpg", alt: "University Esa Unggul" },
-                  { src: "/images/bjb.png", alt: "Bank BJB" },
-                  { src: "/images/PBanten.jpg", alt: "Perbasi Banten" },
-                  { src: "/images/Glo.jpg", alt: "Glory" },
-                  { src: "/images/BBS.png", alt: "Bina Bangsa School" },
-                  { src: "/images/fiba.jpg", alt: "Play FIBA 3x3" },
-                  { src: "/images/Eve.jpg", alt: "University Esa Unggul" },
-                  { src: "/images/bjb.png", alt: "Bank BJB" },
-                  { src: "/images/PBanten.jpg", alt: "Perbasi Banten" },
-                  { src: "/images/Glo.jpg", alt: "Glory" },
-                  { src: "/images/BBS.png", alt: "Bina Bangsa School" },
-                  { src: "/images/fiba.jpg", alt: "Play FIBA 3x3" }
-                ].map((partner, idx) => (
-                  <div key={idx} className="bg-white p-3 md:p-4 lg:p-6 flex items-center justify-center w-full h-32 md:h-40 lg:h-48 hover:scale-105 transition-transform">
-                    <img src={partner.src} alt={partner.alt} className="max-w-full max-h-full object-contain" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Tenant Section */}
-            <div>
-              <p className="text-[#ffd22f] text-center text-lg md:text-xl lg:text-2xl font-semibold mb-6 md:mb-8">Tenant</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-6 mb-8 md:mb-12">
-                {[
-                  { src: "/images/Eve.jpg", alt: "University Esa Unggul" },
-                  { src: "/images/bjb.png", alt: "Bank BJB" },
-                  { src: "/images/PBanten.jpg", alt: "Perbasi Banten" },
-                  { src: "/images/Glo.jpg", alt: "Glory" },
-                  { src: "/images/BBS.png", alt: "Bina Bangsa School" },
-                  { src: "/images/fiba.jpg", alt: "Play FIBA 3x3" },
-                  { src: "/images/Eve.jpg", alt: "University Esa Unggul" },
-                  { src: "/images/bjb.png", alt: "Bank BJB" },
-                  { src: "/images/PBanten.jpg", alt: "Perbasi Banten" },
-                  { src: "/images/Glo.jpg", alt: "Glory" },
-                  { src: "/images/BBS.png", alt: "Bina Bangsa School" },
-                  { src: "/images/fiba.jpg", alt: "Play FIBA 3x3" }
-                ].map((tenant, idx) => (
-                  <div key={idx} className="bg-white p-3 md:p-4 lg:p-6 flex items-center justify-center w-full h-32 md:h-40 lg:h-48 hover:scale-105 transition-transform">
-                    <img src={tenant.src} alt={tenant.alt} className="max-w-full max-h-full object-contain" />
-                  </div>
-                ))}
-              </div>
-              <div className="text-center">
-                <button className="bg-[#ffd22f] text-[#013064] px-8 md:px-10 py-2.5 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition">
-                  Lihat Lebih Banyak
-                </button>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
+      </div>
+    )}
+
+    {/* Official Partner Section */}
+    {partners && partners.length > 0 && (
+      <div className="mb-16 md:mb-20">
+        <p className="text-[#ffd22f] text-center text-lg md:text-xl lg:text-2xl font-semibold mb-6 md:mb-8">
+          Official Partner
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-6">
+          {partners.map((partner) => (
+            <div 
+              key={partner.id} 
+              className="bg-white p-3 md:p-4 lg:p-6 flex items-center justify-center w-full h-32 md:h-40 lg:h-48 hover:scale-105 transition-transform rounded-lg shadow-md"
+            >
+              <img 
+                src={partner.image} 
+                alt={partner.name} 
+                className="max-w-full max-h-full object-contain" 
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</div>
 
         {/* Contact Section - RESPONSIVE */}
         <Contact />
