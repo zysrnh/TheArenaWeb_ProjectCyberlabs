@@ -6,30 +6,31 @@ import Navigation from "../../Components/Navigation";
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [notification, setNotification] = useState(null);
-  
+
   const { data, setData, post, processing, errors } = useForm({
-  username: "",
-  email: "",
-  phone: "",  // ← TAMBAH INI
-  password: "",
-});
+    username: "",
+    email: "",
+    phone: "",
+    password: "",
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     post('/register', {
       onSuccess: () => {
         setNotification({
           type: 'success',
           message: 'Registrasi berhasil! Selamat datang, Anda akan dialihkan ke halaman profil...'
         });
-        
+
+        // ✅ FIX: Gunakan window.location untuk force reload dan pastikan session ter-load
         setTimeout(() => {
-          router.visit('/profile');
-        }, 2000);
+          window.location.href = '/profile';
+        }, 1500);
       },
       onError: (errors) => {
-        const errorMessage = errors.username || errors.email || errors.password || 'Terjadi kesalahan saat registrasi';
+        const errorMessage = errors.username || errors.email || errors.phone || errors.password || 'Terjadi kesalahan saat registrasi';
         setNotification({
           type: 'error',
           message: errorMessage
@@ -162,13 +163,13 @@ export default function Register() {
           animation-fill-mode: forwards;
         }
       `}</style>
-      
+
       <div className="min-h-screen flex flex-col bg-[#013064] relative overflow-hidden">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-10 right-10 w-32 h-32 bg-[#ffd22f]/10 rounded-full blur-3xl animate-float"></div>
-          <div className="absolute bottom-40 left-20 w-40 h-40 bg-[#ffd22f]/5 rounded-full blur-3xl animate-float" style={{animationDelay: '1.5s'}}></div>
-          <div className="absolute top-1/2 right-1/4 w-36 h-36 bg-[#ffd22f]/10 rounded-full blur-3xl animate-float" style={{animationDelay: '0.5s'}}></div>
+          <div className="absolute bottom-40 left-20 w-40 h-40 bg-[#ffd22f]/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute top-1/2 right-1/4 w-36 h-36 bg-[#ffd22f]/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '0.5s' }}></div>
         </div>
 
         {/* Navigation */}
@@ -220,18 +221,15 @@ export default function Register() {
         {/* Register Form */}
         <main className="flex-1 flex items-center justify-center py-12 px-4 relative z-10">
           <div className="w-full max-w-md relative">
-            
-
-
             <h1 className="text-[#ffd22f] text-4xl font-bold text-center mb-8 animate-fade-in-up stagger-1">
               Registrasi
             </h1>
 
-            <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Username Field */}
               <div className="animate-fade-in-up stagger-2">
                 <label className="block text-[#ffd22f] text-sm font-medium mb-2">
-                  Username
+                  Username <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -240,6 +238,7 @@ export default function Register() {
                     placeholder="Username"
                     value={data.username}
                     onChange={(e) => setData('username', e.target.value)}
+                    required
                     className="w-full pl-12 pr-4 py-3 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ffd22f] transition"
                   />
                 </div>
@@ -254,7 +253,7 @@ export default function Register() {
               {/* Email Field */}
               <div className="animate-fade-in-up stagger-3">
                 <label className="block text-[#ffd22f] text-sm font-medium mb-2">
-                  Email
+                  Email <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -263,6 +262,7 @@ export default function Register() {
                     placeholder="Email"
                     value={data.email}
                     onChange={(e) => setData('email', e.target.value)}
+                    required
                     className="w-full pl-12 pr-4 py-3 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ffd22f] transition"
                   />
                 </div>
@@ -273,33 +273,35 @@ export default function Register() {
                   </p>
                 )}
               </div>
+
+              {/* Phone Field */}
               <div className="animate-fade-in-up stagger-3">
-  <label className="block text-[#ffd22f] text-sm font-medium mb-2">
-    Nomor Telepon <span className="text-red-400">*</span>
-  </label>
-  <div className="relative">
-    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-    <input
-      type="tel"
-      placeholder="08123456789"
-      value={data.phone}
-      onChange={(e) => setData('phone', e.target.value)}
-      required
-      className="w-full pl-12 pr-4 py-3 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ffd22f] transition"
-    />
-  </div>
-  {errors.phone && (
-    <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
-      <AlertCircle className="w-3 h-3" />
-      {errors.phone}
-    </p>
-  )}
-</div>
+                <label className="block text-[#ffd22f] text-sm font-medium mb-2">
+                  Nomor Telepon <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="tel"
+                    placeholder="08123456789"
+                    value={data.phone}
+                    onChange={(e) => setData('phone', e.target.value)}
+                    required
+                    className="w-full pl-12 pr-4 py-3 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ffd22f] transition"
+                  />
+                </div>
+                {errors.phone && (
+                  <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.phone}
+                  </p>
+                )}
+              </div>
 
               {/* Password Field */}
               <div className="animate-fade-in-up stagger-4">
                 <label className="block text-[#ffd22f] text-sm font-medium mb-2">
-                  Password
+                  Password <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -308,6 +310,7 @@ export default function Register() {
                     placeholder="Password"
                     value={data.password}
                     onChange={(e) => setData('password', e.target.value)}
+                    required
                     className="w-full pl-12 pr-12 py-3 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ffd22f] transition"
                   />
                   <button
@@ -332,8 +335,7 @@ export default function Register() {
 
               {/* Submit Button */}
               <button
-                type="button"
-                onClick={handleSubmit}
+                type="submit"
                 disabled={processing}
                 className="w-full bg-[#ffd22f] text-[#013064] py-3 font-bold text-lg hover:bg-[#ffe066] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-fade-in-up stagger-5 shadow-lg hover:shadow-xl"
               >
@@ -360,7 +362,7 @@ export default function Register() {
                   Login di sini
                 </Link>
               </p>
-            </div>
+            </form>
           </div>
         </main>
       </div>
