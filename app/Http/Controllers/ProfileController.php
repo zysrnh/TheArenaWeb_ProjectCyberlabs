@@ -9,68 +9,94 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use App\Models\Booking;
 use Carbon\Carbon;
+use App\Models\Review;
 
 class ProfileController extends Controller
 {
-    public function index()
-    {
-        $client = Auth::guard('client')->user();
-        
-        // Ambil semua booking (upcoming & history) dalam satu query
-        $allBookings = Booking::where('client_id', $client->id)
-            ->with(['bookedTimeSlots'])
-            ->orderBy('booking_date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->get();
+   public function index()
+{
+    $client = Auth::guard('client')->user();
+    
+    // Ambil semua booking (upcoming & history) dalam satu query
+    $allBookings = Booking::where('client_id', $client->id)
+        ->with(['bookedTimeSlots'])
+        ->orderBy('booking_date', 'desc')
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-        // Pisahkan upcoming dan history
-        $upcomingBookingsRaw = $allBookings->filter(function($booking) {
-            return in_array($booking->status, ['pending', 'confirmed']) 
-                && $booking->booking_date >= Carbon::today();
-        })->sortBy('booking_date')->sortBy('created_at');
+    // Pisahkan upcoming dan history
+    $upcomingBookingsRaw = $allBookings->filter(function($booking) {
+        return in_array($booking->status, ['pending', 'confirmed']) 
+            && $booking->booking_date >= Carbon::today();
+    })->sortBy('booking_date')->sortBy('created_at');
 
-        $historyBookingsRaw = $allBookings->filter(function($booking) {
-            return $booking->booking_date < Carbon::today() 
-                || in_array($booking->status, ['completed', 'cancelled']);
-        });
+    $historyBookingsRaw = $allBookings->filter(function($booking) {
+        return $booking->booking_date < Carbon::today() 
+            || in_array($booking->status, ['completed', 'cancelled']);
+    });
 
-        // Format upcoming bookings
-        $upcomingBookings = $upcomingBookingsRaw->map(function($booking) {
-            return $this->formatBooking($booking, true);
-        })->values();
+    // Format upcoming bookings
+    $upcomingBookings = $upcomingBookingsRaw->map(function($booking) {
+        return $this->formatBooking($booking, true);
+    })->values();
 
-        // Format history bookings
-        $historyBookingsFormatted = $historyBookingsRaw->map(function($booking) {
-            return $this->formatBooking($booking, false);
-        })->values();
+    // Format history bookings
+    $historyBookingsFormatted = $historyBookingsRaw->map(function($booking) {
+        return $this->formatBooking($booking, false);
+    })->values();
 
-        // Manual pagination for history
-        $perPage = 10;
-        $currentPage = request()->get('page', 1);
-        $historyBookings = new \Illuminate\Pagination\LengthAwarePaginator(
-            $historyBookingsFormatted->forPage($currentPage, $perPage),
-            $historyBookingsFormatted->count(),
-            $perPage,
-            $currentPage,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
-        
-        Log::info('📊 Profile Page Loaded', [
-            'client_id' => $client->id,
-            'upcoming_count' => $upcomingBookings->count(),
-            'history_count' => $historyBookingsFormatted->count(),
-        ]);
-        
-        return Inertia::render('Profile/Profile', [
-            'auth' => [
-                'client' => $client
-            ],
-            'upcomingBookings' => $upcomingBookings,
-            'historyBookings' => $historyBookings,
-            'flash' => session('flash'), // Untuk payment notification
-        ]);
-    }
+    // Manual pagination for history
+    $perPage = 10;
+    $currentPage = request()->get('page', 1);
+    $historyBookings = new \Illuminate\Pagination\LengthAwarePaginator(
+        $historyBookingsFormatted->forPage($currentPage, $perPage),
+        $historyBookingsFormatted->count(),
+        $perPage,
+        $currentPage,
+        ['path' => request()->url(), 'query' => request()->query()]
+    );
 
+    // ✅ CEK APAKAH USER PERLU DIMINTA REVIEW (UPDATED)
+    // Cek booking yang sudah selesai (tanggal sudah lewat DAN status confirmed/completed DAN sudah dibayar)
+    $hasCompletedBooking = Booking::where('client_id', $client->id)
+        ->whereIn('status', ['confirmed', 'completed'])  // ← UBAH: terima confirmed ATAU completed
+        ->where('booking_date', '<', Carbon::today())    // ← Tanggal sudah lewat
+        ->where('payment_status', 'paid')                // ← TAMBAHAN: Harus sudah bayar
+        ->exists();
+
+    $hasGivenReview = Review::where('client_id', $client->id)->exists();
+
+    $shouldShowReviewReminder = $hasCompletedBooking && !$hasGivenReview;
+
+    // Count completed bookings
+    $completedBookingCount = Booking::where('client_id', $client->id)
+        ->whereIn('status', ['confirmed', 'completed'])  // ← UBAH
+        ->where('booking_date', '<', Carbon::today())
+        ->where('payment_status', 'paid')                // ← TAMBAHAN
+        ->count();
+    
+    // ✅ ENHANCED LOGGING
+    Log::info('📊 Profile Page Loaded', [
+        'client_id' => $client->id,
+        'upcoming_count' => $upcomingBookings->count(),
+        'history_count' => $historyBookingsFormatted->count(),
+        'has_completed_booking' => $hasCompletedBooking,
+        'has_given_review' => $hasGivenReview,
+        'should_show_review_reminder' => $shouldShowReviewReminder,
+        'completed_booking_count' => $completedBookingCount,
+    ]);
+    
+    return Inertia::render('Profile/Profile', [
+        'auth' => [
+            'client' => $client
+        ],
+        'upcomingBookings' => $upcomingBookings,
+        'historyBookings' => $historyBookings,
+        'flash' => session('flash'),
+        'shouldShowReviewReminder' => $shouldShowReviewReminder,
+        'completedBookingCount' => $completedBookingCount,
+    ]);
+}
     /**
      * Format booking data untuk frontend
      */

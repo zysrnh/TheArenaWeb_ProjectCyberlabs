@@ -1,6 +1,6 @@
 import { Head, Link, usePage, router } from "@inertiajs/react";
 import { useState, useEffect } from "react";
-import { ChevronRight, Phone, Mail, LogOut } from "lucide-react";
+import { ChevronRight, Phone, Mail, LogOut, X } from "lucide-react";
 import Navigation from "../../Components/Navigation";
 import Footer from "../../Components/Footer";
 import Contact from '../../Components/Contact';
@@ -8,20 +8,52 @@ import Contact from '../../Components/Contact';
 export default function HomePage() {
   // Destructure props dengan default values
   const {
-  auth,
-  liveMatches = [],
-  homeMatches = [],
-  currentFilter = 'all',
-  newsForHome = [],
-  sponsors = [],        // ✅ TAMBAH INI
-  partners = []         // ✅ TAMBAH INI
-} = usePage().props;
+    auth,
+    liveMatches = [],
+    homeMatches = [],
+    currentFilter = 'all',
+    newsForHome = [],
+    sponsors = [],
+    partners = [],
+    reviews = []  // ✅ TAMBAH INI untuk ulasan
+  } = usePage().props;
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showContactBar, setShowContactBar] = useState(false);
   const [filter, setFilter] = useState(currentFilter || 'all');
+  const [reviewsList, setReviewsList] = useState(reviews);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    rating_facilities: 5,
+    rating_hospitality: 5,
+    rating_cleanliness: 5,
+    comment: ''
+  });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const [currentReviewPage, setCurrentReviewPage] = useState(0); // ✅ TAMBAHAN BARU
+
+  // ✅ USEEFFECT AUTO-SLIDE REVIEW CAROUSEL (TAMBAHAN BARU)
+  useEffect(() => {
+    if (reviewsList.length < 3) return; // Jangan auto-slide jika review < 3
+
+    const interval = setInterval(() => {
+      setCurrentReviewPage((prev) => {
+        const maxPage = Math.ceil(reviewsList.length / 3) - 1;
+        return prev >= maxPage ? 0 : prev + 1;
+      });
+    }, 3000); // 3 detik
+
+    return () => clearInterval(interval);
+  }, [reviewsList.length]);
+
+  // Get reviews untuk halaman saat ini
+  const reviewsPerPage = 3;
+  const startIndex = currentReviewPage * reviewsPerPage;
+  const currentReviews = reviewsList.slice(startIndex, startIndex + reviewsPerPage);
+  const totalReviewPages = Math.ceil(reviewsList.length / reviewsPerPage);
 
   const handleFilterChange = (newFilter) => {
     setFilter(newFilter);
@@ -48,6 +80,91 @@ export default function HomePage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
+
+  // FUNGSI UNTUK REVIEW
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch('/api/reviews');
+      const data = await response.json();
+      if (data.success) {
+        setReviewsList(data.reviews);
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewForm.comment.trim() || reviewForm.comment.trim().length < 10) {
+      setNotification({
+        type: 'error',
+        message: 'Komentar minimal 10 karakter'
+      });
+      setTimeout(() => setNotification(null), 3000);
+      return;
+    }
+
+    setIsSubmittingReview(true);
+
+    try {
+      const response = await fetch('/api/reviews/store', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(reviewForm),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setShowReviewModal(false);
+        setReviewForm({
+          rating_facilities: 5,
+          rating_hospitality: 5,
+          rating_cleanliness: 5,
+          comment: ''
+        });
+        fetchReviews();
+        setNotification({
+          type: 'success',
+          message: data.message
+        });
+        setTimeout(() => setNotification(null), 5000);
+      } else {
+        setNotification({
+          type: 'error',
+          message: data.message
+        });
+        setTimeout(() => setNotification(null), 5000);
+      }
+    } catch (error) {
+      console.error('Review error:', error);
+      setNotification({
+        type: 'error',
+        message: 'Terjadi kesalahan saat menambahkan ulasan'
+      });
+      setTimeout(() => setNotification(null), 5000);
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const handleOpenReviewModal = () => {
+    if (!auth?.client) {
+      setNotification({
+        type: 'error',
+        message: 'Silakan login terlebih dahulu untuk memberikan ulasan'
+      });
+      setTimeout(() => {
+        router.visit("/login");
+      }, 1500);
+      return;
+    }
+    setShowReviewModal(true);
+  };
 
   const slides = [
     {
@@ -97,10 +214,99 @@ export default function HomePage() {
         * {
           font-family: 'Montserrat', sans-serif;
         }
+        
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes progress {
+          from {
+            width: 100%;
+          }
+          to {
+            width: 0%;
+          }
+        }
+        
+        .animate-slide-down {
+          animation: slideDown 0.3s ease-out;
+        }
+        
+        .animate-progress {
+          animation: progress 5s linear;
+        }
+          /* ✅ TAMBAHKAN INI DI DALAM <style> TAG DI HomePage.jsx */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Smooth transition untuk carousel dots */
+.carousel-dot {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.carousel-dot:hover {
+  transform: scale(1.2);
+}
       `}</style>
       <div className="min-h-screen flex flex-col bg-[#013064]">
         {/* Navigation - RESPONSIVE & STICKY */}
         <Navigation activePage="home" />
+
+        {/* Notification Popup */}
+        {notification && (
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
+            <div
+              className="absolute inset-0 bg-[#013064]/80 backdrop-blur-sm"
+              onClick={() => setNotification(null)}
+            />
+            <div className="relative bg-white max-w-md w-full animate-slide-down shadow-2xl">
+              <div className="border-t-4 border-[#ffd22f]">
+                <div className="bg-[#013064] px-6 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-[#ffd22f]" />
+                    <h3 className="font-bold text-white text-lg">
+                      {notification.type === 'success' ? 'Berhasil' : 'Perhatian'}
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setNotification(null)}
+                    className="text-white/70 hover:text-white transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-6 bg-white">
+                  <p className="text-[#013064] text-base leading-relaxed">
+                    {notification.message}
+                  </p>
+                </div>
+                <div className="h-1 bg-gray-200 overflow-hidden">
+                  <div className="h-full bg-[#ffd22f] animate-progress" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Hero Section with Carousel - RESPONSIVE */}
         <main className="flex-1 relative">
@@ -286,7 +492,163 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        {/* ✅ SECTION ULASAN PELANGGAN - FIXED CAROUSEL + SMOOTH SLIDE! */}
+        <div className="bg-[#013064] py-12 md:py-16 lg:py-20 px-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 gap-4">
+              <div>
+                <p className="text-[#ffd22f] text-base md:text-xl lg:text-2xl font-semibold mb-2">Ulasan</p>
+                <h2 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold">
+                  Apa Kata Pelanggan Kami
+                </h2>
+              </div>
+              <button
+                onClick={handleOpenReviewModal}
+                className="bg-[#ffd22f] text-[#013064] px-6 md:px-8 py-3 rounded-lg font-bold hover:bg-[#ffe066] transition text-sm md:text-base whitespace-nowrap"
+              >
+                Tulis Ulasan
+              </button>
+            </div>
 
+            {reviewsList.length === 0 ? (
+              <div className="text-center py-12 md:py-16">
+                <p className="text-white/70 text-lg md:text-xl">
+                  Belum ada ulasan. Jadilah yang pertama memberikan ulasan!
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                  {currentReviews.map((review, index) => (
+                    <div
+                      key={review.id}
+                      className="bg-white/10 backdrop-blur-sm p-4 md:p-5 lg:p-6 rounded-lg border border-white/20 hover:bg-white/15 transition animate-fadeInUp"
+                      style={{
+                        animationDelay: `${index * 0.1}s`,
+                        animationFillMode: 'both'
+                      }}
+                    >
+                      {/* Header: Profile + Name + Time */}
+                      <div className="flex items-start gap-2 md:gap-3 lg:gap-4 mb-3 md:mb-4 lg:mb-5">
+                        {review.client_profile_image ? (
+                          <img
+                            src={`/storage/${review.client_profile_image}`}
+                            alt={review.client_name}
+                            className="w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-full object-cover flex-shrink-0 ring-2 ring-[#ffd22f]"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextElementSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className="w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-full bg-[#ffd22f] flex items-center justify-center flex-shrink-0"
+                          style={{ display: review.client_profile_image ? 'none' : 'flex' }}
+                        >
+                          <span className="text-[#013064] font-bold text-base md:text-lg lg:text-xl">
+                            {review.client_name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-bold text-sm md:text-base lg:text-lg mb-0.5 md:mb-1 truncate">
+                            {review.client_name}
+                          </p>
+                          <span className="text-white/50 text-[10px] md:text-xs lg:text-sm">
+                            {review.created_at}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Rating Details - 3 Aspek */}
+                      <div className="space-y-1 md:space-y-1.5 lg:space-y-2 mb-3 md:mb-4 lg:mb-5 bg-white/5 rounded-lg p-2 md:p-2.5 lg:p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-white font-semibold text-[10px] md:text-xs lg:text-sm">
+                            Fasilitas
+                          </span>
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-xs md:text-sm lg:text-base ${i < review.rating_facilities
+                                  ? 'text-[#ffd22f]'
+                                  : 'text-white/20'
+                                  }`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-white font-semibold text-[10px] md:text-xs lg:text-sm">
+                            Keramahan
+                          </span>
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-xs md:text-sm lg:text-base ${i < review.rating_hospitality
+                                  ? 'text-[#ffd22f]'
+                                  : 'text-white/20'
+                                  }`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-white font-semibold text-[10px] md:text-xs lg:text-sm">
+                            Kebersihan
+                          </span>
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-xs md:text-sm lg:text-base ${i < review.rating_cleanliness
+                                  ? 'text-[#ffd22f]'
+                                  : 'text-white/20'
+                                  }`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Comment */}
+                      <div className="border-t border-white/10 pt-2.5 md:pt-3 lg:pt-4">
+                        <p className="text-white/90 leading-relaxed text-[11px] md:text-xs lg:text-sm line-clamp-3">
+                          {review.comment}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ✅ CAROUSEL INDICATORS - BARU! */}
+                {reviewsList.length > 3 && (
+                  <div className="flex justify-center gap-2 mt-6">
+                    {[...Array(totalReviewPages)].map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentReviewPage(idx)}
+                        className={`w-2 h-2 rounded-full transition-all ${idx === currentReviewPage
+                            ? 'bg-[#ffd22f] w-8'
+                            : 'bg-white/30 hover:bg-white/50'
+                          }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
         {/* Berita Seputar Basket Section - RESPONSIVE */}
         <div className="bg-[#013064] py-12 md:py-16 lg:py-20 px-4">
           <div className="max-w-7xl mx-auto">
@@ -690,65 +1052,66 @@ export default function HomePage() {
           </div>
         </div>
         {/* Sponsor and Partners Section - RESPONSIVE */}
-<div className="bg-[#013064] py-12 md:py-16 lg:py-20 px-4">
-  <div className="max-w-7xl mx-auto">
-    <div className="text-center mb-12 md:mb-16">
-      <h2 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold">
-        Partner dan Sponsor Kami
-      </h2>
-    </div>
-
-    {/* Presented By Section (Sponsors) */}
-    {sponsors && sponsors.length > 0 && (
-      <div className="mb-16 md:mb-20">
-        <p className="text-[#ffd22f] text-center text-lg md:text-xl lg:text-2xl font-semibold mb-6 md:mb-8">
-          Presented By
-        </p>
-        <div className="flex flex-col sm:flex-row justify-center gap-6 md:gap-8 flex-wrap">
-          {sponsors.map((sponsor) => (
-            <div 
-              key={sponsor.id} 
-              className="bg-white p-8 md:p-12 flex items-center justify-center w-full sm:w-96 md:w-[440px] h-96 md:h-[440px] rounded-lg shadow-lg"
-            >
-              <img 
-                src={sponsor.image} 
-                alt={sponsor.name} 
-                className="max-w-full max-h-full object-contain" 
-              />
+        <div className="bg-[#013064] py-12 md:py-16 lg:py-20 px-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12 md:mb-16">
+              <h2 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold">
+                Partner dan Sponsor Kami
+              </h2>
             </div>
-          ))}
-        </div>
-      </div>
-    )}
 
-    {/* Official Partner Section */}
-    {partners && partners.length > 0 && (
-      <div className="mb-16 md:mb-20">
-        <p className="text-[#ffd22f] text-center text-lg md:text-xl lg:text-2xl font-semibold mb-6 md:mb-8">
-          Official Partner
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-6">
-          {partners.map((partner) => (
-            <div 
-              key={partner.id} 
-              className="bg-white p-3 md:p-4 lg:p-6 flex items-center justify-center w-full h-32 md:h-40 lg:h-48 hover:scale-105 transition-transform rounded-lg shadow-md"
-            >
-              <img 
-                src={partner.image} 
-                alt={partner.name} 
-                className="max-w-full max-h-full object-contain" 
-              />
-            </div>
-          ))}
+            {/* Presented By Section (Sponsors) */}
+            {sponsors && sponsors.length > 0 && (
+              <div className="mb-16 md:mb-20">
+                <p className="text-[#ffd22f] text-center text-lg md:text-xl lg:text-2xl font-semibold mb-6 md:mb-8">
+                  Presented By
+                </p>
+                <div className="flex flex-col sm:flex-row justify-center gap-6 md:gap-8 flex-wrap">
+                  {sponsors.map((sponsor) => (
+                    <div
+                      key={sponsor.id}
+                      className="bg-white p-8 md:p-12 flex items-center justify-center w-full sm:w-96 md:w-[440px] h-96 md:h-[440px] rounded-lg shadow-lg"
+                    >
+                      <img
+                        src={sponsor.image}
+                        alt={sponsor.name}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Official Partner Section */}
+            {partners && partners.length > 0 && (
+              <div className="mb-16 md:mb-20">
+                <p className="text-[#ffd22f] text-center text-lg md:text-xl lg:text-2xl font-semibold mb-6 md:mb-8">
+                  Official Partner
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-6">
+                  {partners.map((partner) => (
+                    <div
+                      key={partner.id}
+                      className="bg-white p-3 md:p-4 lg:p-6 flex items-center justify-center w-full h-32 md:h-40 lg:h-48 hover:scale-105 transition-transform rounded-lg shadow-md"
+                    >
+                      <img
+                        src={partner.image}
+                        alt={partner.name}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+
+          </div>
         </div>
-      </div>
-    )}
-  </div>
-</div>
 
         {/* Contact Section - RESPONSIVE */}
         <Contact />
-
 
         {/* Footer Section - RESPONSIVE */}
         <Footer />
@@ -756,7 +1119,128 @@ export default function HomePage() {
         {/* Copyright Bar */}
 
       </div>
+
+      {/* Modal Review */}
+      {showReviewModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-[#013064]">Tulis Ulasan</h3>
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Rating Fasilitas */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-[#013064] mb-2">
+                Fasilitas
+              </label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewForm({ ...reviewForm, rating_facilities: star })}
+                    className="text-3xl transition hover:scale-110"
+                  >
+                    <span className={star <= reviewForm.rating_facilities ? 'text-[#ffd22f]' : 'text-gray-300'}>
+                      ★
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Rating Keramahan */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-[#013064] mb-2">
+                Keramahan
+              </label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewForm({ ...reviewForm, rating_hospitality: star })}
+                    className="text-3xl transition hover:scale-110"
+                  >
+                    <span className={star <= reviewForm.rating_hospitality ? 'text-[#ffd22f]' : 'text-gray-300'}>
+                      ★
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Rating Kebersihan */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-[#013064] mb-2">
+                Kebersihan
+              </label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewForm({ ...reviewForm, rating_cleanliness: star })}
+                    className="text-3xl transition hover:scale-110"
+                  >
+                    <span className={star <= reviewForm.rating_cleanliness ? 'text-[#ffd22f]' : 'text-gray-300'}>
+                      ★
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Comment */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-[#013064] mb-2">
+                Komentar (minimal 10 karakter)
+              </label>
+              <textarea
+                value={reviewForm.comment}
+                onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                placeholder="Bagikan pengalaman Anda..."
+                rows={4}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#ffd22f] focus:outline-none resize-none"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {reviewForm.comment.length} karakter
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowReviewModal(false)}
+                disabled={isSubmittingReview}
+                className="flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSubmitReview}
+                disabled={isSubmittingReview}
+                className="flex-1 py-3 bg-[#ffd22f] text-[#013064] rounded-lg font-bold hover:bg-[#ffe066] transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmittingReview ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-[#013064] border-t-transparent rounded-full animate-spin"></div>
+                    Mengirim...
+                  </>
+                ) : (
+                  'Kirim Ulasan'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
-

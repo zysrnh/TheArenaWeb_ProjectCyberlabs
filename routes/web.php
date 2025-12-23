@@ -10,6 +10,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\EquipmentBookingController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\AboutController; // ✅ Tambahkan ini
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -24,14 +25,8 @@ Route::get('/storage-link', function () {
 // Route untuk HomePage
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Route untuk About/Tentang
-Route::get('/tentang', function () {
-    return Inertia::render('About/About', [
-        'auth' => [
-            'client' => auth('client')->user()
-        ]
-    ]);
-})->name('about');
+// ✅ Route untuk About/Tentang - GUNAKAN CONTROLLER
+Route::get('/tentang', [AboutController::class, 'index'])->name('about');
 
 // ============================================
 // BOOKING LAPANGAN ROUTES

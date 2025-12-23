@@ -11,6 +11,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
+use Carbon\Carbon;
 
 class BookingResource extends Resource
 {
@@ -28,6 +29,9 @@ class BookingResource extends Resource
 
     public static function form(Form $form): Form
     {
+        // ✅ Auto-complete expired bookings saat form dibuka
+        static::autoCompleteExpiredBookings();
+        
         return $form
             ->schema([
                 Forms\Components\Section::make('Informasi Booking')
@@ -42,8 +46,8 @@ class BookingResource extends Resource
                         Forms\Components\DatePicker::make('booking_date')
                             ->label('Tanggal Booking')
                             ->required()
-                            ->native(false)
-                            ->minDate(now()),
+                            ->native(false),
+                            // ->minDate(now()), // ✅ DIHAPUS biar admin bisa input tanggal kemarin untuk testing
                         
                         Forms\Components\Select::make('venue_type')
                             ->label('Pilih Venue')
@@ -113,6 +117,9 @@ class BookingResource extends Resource
 
     public static function table(Table $table): Table
     {
+        // ✅ Auto-complete expired bookings saat table dimuat
+        static::autoCompleteExpiredBookings();
+        
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('client.name')
@@ -148,12 +155,10 @@ class BookingResource extends Resource
                     ->formatStateUsing(function ($record) {
                         $slots = $record->time_slots;
                         
-                        // Pastikan slots adalah array
                         if (!is_array($slots) || empty($slots)) {
                             return '-';
                         }
                         
-                        // Ambil semua waktu
                         $times = [];
                         foreach ($slots as $slot) {
                             if (isset($slot['time'])) {
@@ -165,12 +170,10 @@ class BookingResource extends Resource
                             return '-';
                         }
                         
-                        // Tampilkan hanya slot pertama + jumlah total
                         if (count($times) > 1) {
                             return $times[0] . ' (+' . (count($times) - 1) . ')';
                         }
                         
-                        // Tampilkan slot tunggal
                         return $times[0];
                     })
                     ->tooltip(function ($record) {
@@ -187,7 +190,6 @@ class BookingResource extends Resource
                             }
                         }
                         
-                        // Tampilkan semua slot di tooltip jika lebih dari 1
                         if (count($times) > 1) {
                             return 'Semua slot: ' . implode(', ', $times);
                         }
@@ -390,6 +392,82 @@ class BookingResource extends Resource
             ])
             ->defaultSort('booking_date', 'desc')
             ->poll('30s'); // Auto refresh setiap 30 detik
+    }
+
+    /**
+     * ✅ Method untuk auto-complete booking yang sudah lewat waktu
+     */
+    protected static function autoCompleteExpiredBookings(): void
+    {
+        try {
+            $bookings = static::getModel()::where('status', 'confirmed')
+                ->where('booking_date', '<', Carbon::today())
+                ->get();
+
+            $completedCount = 0;
+
+            foreach ($bookings as $booking) {
+                if (static::isBookingExpired($booking)) {
+                    $booking->update(['status' => 'completed']);
+                    $completedCount++;
+                    
+                    // Optional: Log untuk tracking
+                    \Log::info("Booking #{$booking->id} auto-completed", [
+                        'client' => $booking->client->name,
+                        'date' => $booking->booking_date,
+                        'venue' => $booking->venue_type,
+                    ]);
+                }
+            }
+
+            // Optional: Notifikasi jika ada booking yang di-complete
+            if ($completedCount > 0) {
+                Notification::make()
+                    ->title('Auto-Complete Booking')
+                    ->success()
+                    ->body("{$completedCount} booking telah otomatis diselesaikan.")
+                    ->send();
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error auto-completing bookings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ✅ Cek apakah booking sudah expired (tanggal dan waktu sudah lewat)
+     */
+    protected static function isBookingExpired(Booking $booking): bool
+    {
+        $bookingDate = Carbon::parse($booking->booking_date);
+        
+        // Jika tanggal booking sudah lewat dari hari ini
+        if ($bookingDate->lt(Carbon::today())) {
+            return true;
+        }
+
+        // Jika tanggal booking adalah hari ini, cek jam terakhir slot
+        if ($bookingDate->isToday() && !empty($booking->time_slots)) {
+            $lastSlot = end($booking->time_slots);
+            
+            if (isset($lastSlot['time'])) {
+                // Extract end time dari slot (contoh: "20.00 - 22.00" -> "22.00")
+                $timeRange = explode(' - ', $lastSlot['time']);
+                $endTime = trim(end($timeRange));
+                
+                try {
+                    // Parse waktu akhir
+                    $endDateTime = Carbon::parse($booking->booking_date . ' ' . $endTime);
+                    
+                    // Cek apakah waktu sudah lewat
+                    return Carbon::now()->gt($endDateTime);
+                } catch (\Exception $e) {
+                    // Jika error parsing time, anggap sudah expired jika tanggalnya lewat
+                    return $bookingDate->lt(Carbon::today());
+                }
+            }
+        }
+
+        return false;
     }
 
     public static function getRelations(): array

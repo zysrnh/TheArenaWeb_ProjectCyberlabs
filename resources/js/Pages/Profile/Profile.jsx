@@ -4,9 +4,11 @@ import { Phone, Mail, Calendar, User, MapPin, LogOut, Video, Clock, X, CreditCar
 
 import Navigation from "../../Components/Navigation";
 import Footer from "../../Components/Footer";
+import ReviewReminderModal from "../../Components/ReviewReminderModal";
 
 export default function Profile() {
-  const { auth, upcomingBookings = [], historyBookings = {}, flash } = usePage().props;
+ const { auth, upcomingBookings = [], historyBookings = {}, flash, 
+        shouldShowReviewReminder, completedBookingCount } = usePage().props;
   const [activeTab, setActiveTab] = useState('data-profil');
   const [selectedImage, setSelectedImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
@@ -17,6 +19,16 @@ export default function Profile() {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationType, setNotificationType] = useState('success');
+
+  useEffect(() => {
+    console.log('📊 Profile Page Props:', {
+      shouldShowReviewReminder,
+      completedBookingCount,
+      typeOfShouldShow: typeof shouldShowReviewReminder,
+      typeOfCount: typeof completedBookingCount,
+      authClient: auth.client?.id
+    });
+  }, [shouldShowReviewReminder, completedBookingCount]);
 
   const { data, setData, post, processing, errors } = useForm({
     name: auth.client?.name || "",
@@ -566,7 +578,7 @@ export default function Profile() {
         <Footer />
       </div>
 
-      {/* Logout Confirmation Modal */}
+     {/* Logout Confirmation Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
@@ -616,6 +628,12 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      {/* Review Reminder Modal */}
+      <ReviewReminderModal 
+        shouldShow={shouldShowReviewReminder} 
+        completedBookingCount={completedBookingCount}
+      />
     </>
   );
 }

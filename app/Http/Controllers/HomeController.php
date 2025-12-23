@@ -7,6 +7,7 @@ use App\Models\Game;
 use App\Models\News;
 use App\Models\Sponsor;
 use App\Models\Partner;
+use App\Models\Review; // ✅ TAMBAHKAN INI
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -108,7 +109,7 @@ class HomeController extends Controller
                     ];
                 });
 
-            // ✅ TAMBAHAN BARU: Sponsors & Partners
+            // Sponsors & Partners
             $sponsors = Sponsor::active()->ordered()->get()->map(function ($sponsor) {
                 return [
                     'id' => $sponsor->id,
@@ -125,6 +126,26 @@ class HomeController extends Controller
                 ];
             });
 
+            // ✅ TAMBAHAN BARU: Ambil approved reviews untuk homepage
+            $reviews = Review::with('client:id,name,profile_image')
+                ->approved()
+                ->latest()
+                ->take(6) // Ambil 6 review terbaru untuk homepage
+                ->get()
+                ->map(function ($review) {
+                    return [
+                        'id' => $review->id,
+                        'client_name' => $review->client->name,
+                        'client_profile_image' => $review->client->profile_image,
+                        'rating' => $review->rating,
+                        'rating_facilities' => $review->rating_facilities,
+                        'rating_hospitality' => $review->rating_hospitality,
+                        'rating_cleanliness' => $review->rating_cleanliness,
+                        'comment' => $review->comment,
+                        'created_at' => $review->created_at->diffForHumans(),
+                    ];
+                });
+
             return Inertia::render('HomePage/HomePage', [
                 'auth' => [
                     'client' => Auth::guard('client')->user()
@@ -133,8 +154,9 @@ class HomeController extends Controller
                 'homeMatches' => $homeMatches,
                 'currentFilter' => $filter,
                 'newsForHome' => $newsForHome,
-                'sponsors' => $sponsors,      // ✅ Tambahkan ini
-                'partners' => $partners,      // ✅ Tambahkan ini
+                'sponsors' => $sponsors,
+                'partners' => $partners,
+                'reviews' => $reviews, // ✅ TAMBAHKAN INI
             ]);
         } catch (\Exception $e) {
             // Log error untuk debugging
@@ -149,9 +171,10 @@ class HomeController extends Controller
                 'liveMatches' => [],
                 'homeMatches' => [],
                 'currentFilter' => 'all',
-                'newsForHome' => [],           // ✅ Tambahkan ini
-                'sponsors' => [],              // ✅ Tambahkan ini
-                'partners' => [],              // ✅ Tambahkan ini
+                'newsForHome' => [],
+                'sponsors' => [],
+                'partners' => [],
+                'reviews' => [], // ✅ TAMBAHKAN INI
             ]);
         }
     }

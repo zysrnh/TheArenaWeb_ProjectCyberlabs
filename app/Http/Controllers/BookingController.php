@@ -172,9 +172,9 @@ class BookingController extends Controller
         $venue = $venues[$selectedVenueType] ?? $venues['pvj'];
         $schedules = $this->generateSchedules($weekOffset);
 
-        // ✅ UPDATE: Ambil review dengan 3 aspek rating
+        // ✅ Ambil review dengan 3 aspek rating
         $reviews = Review::with('client:id,name,profile_image')
-            ->approved() // ← TAMBAHKAN INI
+            ->approved()
             ->latest()
             ->take(8)
             ->get()
@@ -372,10 +372,11 @@ class BookingController extends Controller
         }
     }
 
-    // ========== METHOD BARU UNTUK REVIEW ========== //
+    // ========== METHOD REVIEW ========== //
 
     /**
-     * ✅ UPDATE: Simpan review dengan 3 aspek rating
+     * ✅ FIXED: Simpan review dengan 3 aspek rating
+     * User bisa review setiap kali selesai booking baru
      */
     public function storeReview(Request $request)
     {
@@ -394,36 +395,19 @@ class BookingController extends Controller
         }
 
         try {
-            // Cek apakah user pernah booking yang sudah confirmed dan sudah lewat
-            $hasCompletedBooking = Booking::where('client_id', Auth::guard('client')->id())
-                ->where('status', 'confirmed')
-                ->where('booking_date', '<', now()->toDateString())
-                ->exists();
-
-            if (!$hasCompletedBooking) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda harus menyelesaikan booking terlebih dahulu untuk memberikan ulasan.'
-                ], 422);
-            }
-
-            // Cek apakah user sudah pernah review
-            $existingReview = Review::where('client_id', Auth::guard('client')->id())
+            // ✅ FIXED: Cek apakah ada booking 'completed' yang belum di-review
+            $completedBookingWithoutReview = Booking::where('client_id', Auth::guard('client')->id())
+                ->where('status', 'completed')
+                ->whereDoesntHave('review') // ✅ Cari yang belum ada review
+                ->oldest('booking_date') // ✅ Ambil yang paling lama dulu
                 ->first();
 
-            if ($existingReview) {
+            if (!$completedBookingWithoutReview) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Anda sudah memberikan ulasan sebelumnya.'
+                    'message' => 'Anda belum memiliki booking yang selesai atau semua booking sudah direview.'
                 ], 422);
             }
-
-            // Ambil booking terakhir yang sudah selesai
-            $lastBooking = Booking::where('client_id', Auth::guard('client')->id())
-                ->where('status', 'confirmed')
-                ->where('booking_date', '<', now()->toDateString())
-                ->latest('booking_date')
-                ->first();
 
             // ✅ Hitung rating rata-rata untuk backward compatibility
             $averageRating = round(
@@ -432,7 +416,7 @@ class BookingController extends Controller
 
             $review = Review::create([
                 'client_id' => Auth::guard('client')->id(),
-                'booking_id' => $lastBooking->id,
+                'booking_id' => $completedBookingWithoutReview->id, // ✅ Review untuk booking ini
                 'rating' => $averageRating,
                 'rating_facilities' => $validated['rating_facilities'],
                 'rating_hospitality' => $validated['rating_hospitality'],
@@ -443,7 +427,7 @@ class BookingController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Terima kasih! Ulasan Anda akan ditampilkan setelah diverifikasi oleh admin.', // ✅ UPDATE MESSAGE
+                'message' => 'Terima kasih! Ulasan Anda akan ditampilkan setelah diverifikasi oleh admin.',
                 'review' => [
                     'id' => $review->id,
                     'client_name' => Auth::guard('client')->user()->name,
@@ -464,13 +448,12 @@ class BookingController extends Controller
     }
 
     /**
-     * ✅ UPDATE: Ambil review dengan 3 aspek rating
+     * ✅ Ambil review dengan 3 aspek rating (hanya yang approved)
      */
     public function getReviews()
     {
-        // ✅ UPDATE: Hanya ambil approved reviews
         $reviews = Review::with('client:id,name,profile_image')
-            ->approved() // ← TAMBAHKAN INI
+            ->approved()
             ->latest()
             ->take(8)
             ->get()
