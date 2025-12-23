@@ -106,6 +106,9 @@ export default function About() {
         }
         .prose-invert p {
           color: #e5e7eb;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
         }
         .prose-invert strong {
           color: #fff;
@@ -116,9 +119,24 @@ export default function About() {
         }
         .prose-invert a {
           color: #ffd22f;
+          word-break: break-word;
         }
         .prose-invert a:hover {
           color: #ffc107;
+        }
+        
+        /* Mobile text optimization */
+        @media (max-width: 640px) {
+          .prose-invert p {
+            font-size: 14px;
+            line-height: 1.6;
+          }
+          .prose-invert h2 {
+            font-size: 20px;
+          }
+          .prose-invert h3 {
+            font-size: 18px;
+          }
         }
       `}</style>
       
@@ -294,9 +312,9 @@ export default function About() {
         </div>
 
         {/* Full Width Description Section (DYNAMIC) */}
-        <div className="bg-[#003f84] text-white py-8 md:py-12 lg:py-16 px-6 md:px-12 lg:px-20">
+        <div className="bg-[#003f84] text-white py-8 md:py-12 lg:py-16 px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20">
           <div className="max-w-7xl mx-auto">
-            <div className="space-y-4 md:space-y-6 text-gray-200 text-xs md:text-sm lg:text-base leading-relaxed">
+            <div className="space-y-3 sm:space-y-4 md:space-y-6 text-gray-200 text-sm sm:text-base md:text-lg leading-relaxed break-words">
               {aboutData?.full_description?.description_1 && renderHTML(aboutData.full_description.description_1)}
               {aboutData?.full_description?.description_2 && renderHTML(aboutData.full_description.description_2)}
               {aboutData?.full_description?.description_3 && renderHTML(aboutData.full_description.description_3)}

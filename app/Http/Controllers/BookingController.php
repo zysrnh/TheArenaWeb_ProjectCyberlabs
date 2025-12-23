@@ -172,7 +172,6 @@ class BookingController extends Controller
         $venue = $venues[$selectedVenueType] ?? $venues['pvj'];
         $schedules = $this->generateSchedules($weekOffset);
 
-        // ✅ Ambil review dengan 3 aspek rating
         $reviews = Review::with('client:id,name,profile_image')
             ->approved()
             ->latest()
@@ -229,6 +228,9 @@ class BookingController extends Controller
         return $schedules;
     }
 
+    /**
+     * ✅ FIXED: Deteksi booking dari customer DAN recurring booking dari admin
+     */
     public function getTimeSlots(Request $request)
     {
         $date = $request->input('date');
@@ -246,13 +248,33 @@ class BookingController extends Controller
             ['time' => '22.00 - 00.00', 'duration' => 120, 'price' => 350000],
         ];
 
-        $bookedSlots = BookedTimeSlot::where('date', $date)
+        // ✅ Ambil slot yang sudah booked dari BookedTimeSlot
+        $bookedFromTimeSlots = BookedTimeSlot::where('date', $date)
             ->where('venue_type', $venueType)
             ->whereHas('booking', function ($query) {
                 $query->whereIn('status', ['pending', 'confirmed']);
             })
             ->pluck('time_slot')
             ->toArray();
+
+        // ✅ PENTING: Ambil juga dari tabel Bookings langsung (untuk recurring booking)
+        // Karena CreateRecurringBooking membuat entry di BookedTimeSlot juga,
+        // kita hanya perlu pastikan query di atas sudah mencakup semua
+        
+        // Tapi untuk extra safety, kita double-check dari Bookings table juga
+        $bookedFromBookings = Booking::where('booking_date', $date)
+            ->where('venue_type', $venueType)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->get()
+            ->flatMap(function ($booking) {
+                // Extract time dari time_slots JSON
+                return collect($booking->time_slots)->pluck('time');
+            })
+            ->unique()
+            ->toArray();
+
+        // ✅ Merge kedua hasil
+        $bookedSlots = array_unique(array_merge($bookedFromTimeSlots, $bookedFromBookings));
 
         $timeSlots = array_map(function ($slot) use ($bookedSlots) {
             $slot['status'] = in_array($slot['time'], $bookedSlots) ? 'booked' : 'available';
@@ -293,6 +315,8 @@ class BookingController extends Controller
             DB::beginTransaction();
 
             $requestedSlots = array_column($validated['time_slots'], 'time');
+            
+            // ✅ Cek konflik dari BookedTimeSlot (customer booking + recurring booking)
             $alreadyBooked = BookedTimeSlot::where('date', $validated['date'])
                 ->where('venue_type', $validated['venue_type'])
                 ->whereIn('time_slot', $requestedSlots)
@@ -372,12 +396,6 @@ class BookingController extends Controller
         }
     }
 
-    // ========== METHOD REVIEW ========== //
-
-    /**
-     * ✅ FIXED: Simpan review dengan 3 aspek rating
-     * User bisa review setiap kali selesai booking baru
-     */
     public function storeReview(Request $request)
     {
         $validated = $request->validate([
@@ -395,11 +413,10 @@ class BookingController extends Controller
         }
 
         try {
-            // ✅ FIXED: Cek apakah ada booking 'completed' yang belum di-review
             $completedBookingWithoutReview = Booking::where('client_id', Auth::guard('client')->id())
                 ->where('status', 'completed')
-                ->whereDoesntHave('review') // ✅ Cari yang belum ada review
-                ->oldest('booking_date') // ✅ Ambil yang paling lama dulu
+                ->whereDoesntHave('review')
+                ->oldest('booking_date')
                 ->first();
 
             if (!$completedBookingWithoutReview) {
@@ -409,20 +426,19 @@ class BookingController extends Controller
                 ], 422);
             }
 
-            // ✅ Hitung rating rata-rata untuk backward compatibility
             $averageRating = round(
                 ($validated['rating_facilities'] + $validated['rating_hospitality'] + $validated['rating_cleanliness']) / 3
             );
 
             $review = Review::create([
                 'client_id' => Auth::guard('client')->id(),
-                'booking_id' => $completedBookingWithoutReview->id, // ✅ Review untuk booking ini
+                'booking_id' => $completedBookingWithoutReview->id,
                 'rating' => $averageRating,
                 'rating_facilities' => $validated['rating_facilities'],
                 'rating_hospitality' => $validated['rating_hospitality'],
                 'rating_cleanliness' => $validated['rating_cleanliness'],
                 'comment' => $validated['comment'],
-                'is_approved' => false, // ✅ Default pending approval
+                'is_approved' => false,
             ]);
 
             return response()->json([
@@ -447,9 +463,6 @@ class BookingController extends Controller
         }
     }
 
-    /**
-     * ✅ Ambil review dengan 3 aspek rating (hanya yang approved)
-     */
     public function getReviews()
     {
         $reviews = Review::with('client:id,name,profile_image')

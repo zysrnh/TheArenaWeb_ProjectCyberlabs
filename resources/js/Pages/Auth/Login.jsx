@@ -275,12 +275,6 @@ export default function Login() {
                   />
                   <span className="text-white text-sm group-hover:text-[#ffd22f] transition">Remember Me</span>
                 </label>
-                <a
-                  href="#"
-                  className="text-white text-sm hover:text-[#ffd22f] transition"
-                >
-                  Lupa Password?
-                </a>
               </div>
 
               {/* Submit Button */}
