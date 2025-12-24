@@ -95,12 +95,13 @@ class BookingController extends Controller
             'pvj' => [
                 'id' => 3,
                 'venue_type' => 'pvj',
-                'name' => 'The Arena Basketball PVJ',
-                'location' => 'Mall PVJ Bandung Lt P3',
-                'description' => 'Premium Mall Basketball Court - Indoor Arena',
-                'full_description' => 'The Arena Basketball PVJ berlokasi strategis di lantai P3 Mall PVJ Bandung. Lapangan indoor dengan lantai kayu jati premium, sistem sirkulasi udara terbaik, dan akses mudah dari berbagai area kota. Ideal untuk komunitas basket dan acara turnamen.',
-                'invitation' => 'Main basket di pusat kota! Akses mudah, fasilitas mall lengkap, dan arena premium menanti Anda. Perfect untuk after-work basketball session.',
+                'name' => 'The Arena PVJ',
+                'location' => 'Paris Van Java Mall, Lantai P13, Bandung',
+                'description' => 'Basketball Courts & Healthy Lifestyle Space',
+                'full_description' => 'The Arena PVJ berlokasi di Paris Van Java Mall, Lantai P13, Bandung. Tersedia 1 lapangan basket indoor dengan material kayu jati berkualitas, memberikan pengalaman bermain yang optimal. Kami mengundang Anda untuk merasakan pengalaman berolahraga di fasilitas terbaik yang dapat disesuaikan dengan kebutuhan latihan maupun acara.',
+                'invitation' => 'Rasakan pengalaman bermain basket di lapangan premium dengan material kayu jati berkualitas. Fasilitas lengkap dan lokasi strategis di pusat perbelanjaan membuat The Arena PVJ menjadi pilihan utama para pecinta basket di Bandung.',
                 'price_per_session' => 350000,
+                'member_price' => 300000, // Harga member lebih murah
                 'images' => [
                     'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200',
                     'https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200',
@@ -109,24 +110,25 @@ class BookingController extends Controller
                     'https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?w=1200',
                 ],
                 'facilities' => [
-                    'Cafe & Resto',
-                    'Parkir Mall 24 Jam',
-                    'Food Court Access',
-                    'Toilet Premium',
-                    'AC Central',
-                    'Tribun VIP',
-                    'WiFi Gratis',
+                    'Scoreboard',
+                    'Shotclock',
+                    'Sound System',
+                    'Café & Resto',
+                    'Tribun Penonton',
+                    'Parkir Mobil & Motor',
+                    'Toilet',
+                    'Penjualan makanan ringan & minuman',
                 ],
                 'rules' => [
-                    'Dilarang merokok di seluruh area mall.',
-                    'Dilarang meludah di area lapangan.',
-                    'Wajib menggunakan sepatu khusus basket indoor.',
-                    'Dilarang membawa makanan berbau tajam ke area lapangan.',
-                    'Harap menjaga barang bawaan pribadi.',
-                    'Pemain harus datang sesuai jadwal booking.',
-                    'Customer wajib dalam kondisi sehat.',
-                    'Pihak lapangan tidak bertanggung jawab atas kecelakaan akibat kelalaian pemain.',
+                    'Dilarang merokok',
+                    'Dilarang meludah di area lapangan',
+                    'Wajib menggunakan sepatu olahraga / basket',
+                    'Dilarang membuang sampah sembarangan',
+                    'Dilarang membawa alkohol, narkoba, atau barang ilegal',
+                    'Pemain wajib datang tepat waktu',
+                    'Pemain harus dalam kondisi sehat',
                 ],
+                'note' => 'Segala risiko, cedera atau kecelakaan di luar tanggung jawab pengelola lapangan.',
             ],
 
             'urban' => [
@@ -260,7 +262,7 @@ class BookingController extends Controller
         // ✅ PENTING: Ambil juga dari tabel Bookings langsung (untuk recurring booking)
         // Karena CreateRecurringBooking membuat entry di BookedTimeSlot juga,
         // kita hanya perlu pastikan query di atas sudah mencakup semua
-        
+
         // Tapi untuk extra safety, kita double-check dari Bookings table juga
         $bookedFromBookings = Booking::where('booking_date', $date)
             ->where('venue_type', $venueType)
@@ -315,7 +317,7 @@ class BookingController extends Controller
             DB::beginTransaction();
 
             $requestedSlots = array_column($validated['time_slots'], 'time');
-            
+
             // ✅ Cek konflik dari BookedTimeSlot (customer booking + recurring booking)
             $alreadyBooked = BookedTimeSlot::where('date', $validated['date'])
                 ->where('venue_type', $validated['venue_type'])
