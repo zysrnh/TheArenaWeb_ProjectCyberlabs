@@ -7,7 +7,8 @@ use App\Models\Game;
 use App\Models\News;
 use App\Models\Sponsor;
 use App\Models\Partner;
-use App\Models\Review; // ✅ TAMBAHKAN INI
+use App\Models\Review;
+use App\Models\Facility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -66,7 +67,6 @@ class HomeController extends Controller
             } elseif ($filter === 'upcoming') {
                 $query->whereIn('status', ['upcoming', 'scheduled']);
             } elseif ($filter === 'all') {
-                // Show all matches
                 $query->whereIn('status', ['live', 'upcoming', 'scheduled', 'finished', 'completed']);
             }
 
@@ -78,8 +78,7 @@ class HomeController extends Controller
                 ->take(4)
                 ->get()
                 ->map(function ($game) {
-                    // Tentukan type berdasarkan status
-                    $type = 'upcoming'; // default
+                    $type = 'upcoming';
                     if ($game->status === 'live') {
                         $type = 'live';
                     } elseif ($game->status === 'finished' || $game->status === 'completed') {
@@ -102,8 +101,8 @@ class HomeController extends Controller
                         ],
                         'type' => $type,
                         'league' => $game->league ?? 'League',
-                        'day' => $game->date->locale('id')->isoFormat('dddd'), // Senin
-                        'date' => $game->date->locale('id')->isoFormat('D MMMM YYYY'), // 7 November 2024
+                        'day' => $game->date->locale('id')->isoFormat('dddd'),
+                        'date' => $game->date->locale('id')->isoFormat('D MMMM YYYY'),
                         'time' => $game->formatted_time ?? $game->time,
                         'score' => $game->score,
                     ];
@@ -126,11 +125,11 @@ class HomeController extends Controller
                 ];
             });
 
-            // ✅ TAMBAHAN BARU: Ambil approved reviews untuk homepage
+            // Reviews
             $reviews = Review::with('client:id,name,profile_image')
                 ->approved()
                 ->latest()
-                ->take(6) // Ambil 6 review terbaru untuk homepage
+                ->take(6)
                 ->get()
                 ->map(function ($review) {
                     return [
@@ -146,6 +145,34 @@ class HomeController extends Controller
                     ];
                 });
 
+            // ✅ PERBAIKAN: Handle gambar fasilitas - support URL & uploaded file
+            $facilities = Facility::active()
+                ->ordered()
+                ->get()
+                ->map(function ($facility) {
+                    // Cek apakah image_url adalah URL penuh (http/https) atau path file
+                    $imageUrl = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800'; // default
+                    
+                    if ($facility->image_url) {
+                        // Jika dimulai dengan http/https, langsung gunakan URL tersebut
+                        if (str_starts_with($facility->image_url, 'http://') || 
+                            str_starts_with($facility->image_url, 'https://')) {
+                            $imageUrl = $facility->image_url;
+                        } 
+                        // Jika path file lokal, tambahkan asset storage
+                        else {
+                            $imageUrl = asset('storage/' . $facility->image_url);
+                        }
+                    }
+                    
+                    return [
+                        'id' => $facility->id,
+                        'name' => $facility->name,
+                        'description' => $facility->description,
+                        'image' => $imageUrl,
+                    ];
+                });
+
             return Inertia::render('HomePage/HomePage', [
                 'auth' => [
                     'client' => Auth::guard('client')->user()
@@ -156,14 +183,13 @@ class HomeController extends Controller
                 'newsForHome' => $newsForHome,
                 'sponsors' => $sponsors,
                 'partners' => $partners,
-                'reviews' => $reviews, // ✅ TAMBAHKAN INI
+                'reviews' => $reviews,
+                'facilities' => $facilities,
             ]);
         } catch (\Exception $e) {
-            // Log error untuk debugging
             Log::error('HomePage Error: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
 
-            // Return dengan data kosong agar halaman tidak blank
             return Inertia::render('HomePage/HomePage', [
                 'auth' => [
                     'client' => Auth::guard('client')->user()
@@ -174,7 +200,8 @@ class HomeController extends Controller
                 'newsForHome' => [],
                 'sponsors' => [],
                 'partners' => [],
-                'reviews' => [], // ✅ TAMBAHKAN INI
+                'reviews' => [],
+                'facilities' => [],
             ]);
         }
     }

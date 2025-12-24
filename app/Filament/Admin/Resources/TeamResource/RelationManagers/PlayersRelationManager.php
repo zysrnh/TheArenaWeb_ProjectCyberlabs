@@ -60,6 +60,43 @@ class PlayersRelationManager extends RelationManager
                             ->placeholder('e.g., Yudha Saputera')
                             ->columnSpanFull(),
 
+                        Forms\Components\Select::make('team_category_id')
+                            ->label('Team Category')
+                            ->relationship('teamCategory', 'category_name', function ($query, $livewire) {
+                                $query->where('team_id', $livewire->getOwnerRecord()->id)
+                                      ->where('is_active', true);
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->placeholder('Select category (optional)')
+                            ->helperText('Assign player to category: U-16, U-18, U-22, Senior, etc.')
+                            ->columnSpanFull()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('category_name')
+                                    ->label('Category Name')
+                                    ->required()
+                                    ->placeholder('e.g., U-16, U-18, Senior')
+                                    ->helperText('Quick add category'),
+                                
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\TextInput::make('min_age')
+                                            ->label('Min Age')
+                                            ->numeric()
+                                            ->placeholder('e.g., 14'),
+                                        
+                                        Forms\Components\TextInput::make('max_age')
+                                            ->label('Max Age')
+                                            ->numeric()
+                                            ->placeholder('e.g., 16'),
+                                    ]),
+                            ])
+                            ->createOptionUsing(function (array $data, $livewire) {
+                                $data['team_id'] = $livewire->getOwnerRecord()->id;
+                                $data['is_active'] = true;
+                                return \App\Models\TeamCategory::create($data)->id;
+                            }),
+
                         Forms\Components\FileUpload::make('photo')
                             ->label('Player Photo')
                             ->image()
@@ -150,6 +187,16 @@ class PlayersRelationManager extends RelationManager
                     ->sortable()
                     ->searchable(),
 
+                Tables\Columns\TextColumn::make('teamCategory.category_name')
+                    ->label('Category')
+                    ->badge()
+                    ->color('warning')
+                    ->sortable()
+                    ->searchable()
+                    ->default('-')
+                    ->toggleable()
+                    ->tooltip('U-16, U-18, U-22, Senior, etc.'),
+
                 Tables\Columns\TextColumn::make('height')
                     ->label('Height')
                     ->formatStateUsing(fn ($state) => $state ? $state . ' cm' : '-')
@@ -185,6 +232,15 @@ class PlayersRelationManager extends RelationManager
                         'C' => 'Center',
                     ])
                     ->label('Position'),
+
+                Tables\Filters\SelectFilter::make('team_category_id')
+                    ->label('Category')
+                    ->relationship('teamCategory', 'category_name', function ($query, $livewire) {
+                        $query->where('team_id', $livewire->getOwnerRecord()->id);
+                    })
+                    ->searchable()
+                    ->preload()
+                    ->placeholder('All Categories'),
 
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Active Status')
@@ -248,6 +304,34 @@ class PlayersRelationManager extends RelationManager
                                 ->warning()
                                 ->title('Players deactivated')
                                 ->body(count($records) . ' players have been deactivated from matches.')
+                                ->send();
+                        }),
+
+                    Tables\Actions\BulkAction::make('assign_category')
+                        ->label('Assign to Category')
+                        ->icon('heroicon-o-tag')
+                        ->color('warning')
+                        ->form([
+                            Forms\Components\Select::make('team_category_id')
+                                ->label('Select Category')
+                                ->options(function ($livewire) {
+                                    return \App\Models\TeamCategory::where('team_id', $livewire->getOwnerRecord()->id)
+                                        ->where('is_active', true)
+                                        ->pluck('category_name', 'id');
+                                })
+                                ->searchable()
+                                ->required()
+                                ->placeholder('Choose category'),
+                        ])
+                        ->action(function (array $data, $records) {
+                            $records->each->update(['team_category_id' => $data['team_category_id']]);
+                            
+                            $categoryName = \App\Models\TeamCategory::find($data['team_category_id'])->category_name;
+                            
+                            \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Category Assigned')
+                                ->body(count($records) . ' players assigned to ' . $categoryName)
                                 ->send();
                         }),
                 ]),

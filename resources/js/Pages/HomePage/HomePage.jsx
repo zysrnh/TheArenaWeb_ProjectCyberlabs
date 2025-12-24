@@ -15,7 +15,8 @@ export default function HomePage() {
     newsForHome = [],
     sponsors = [],
     partners = [],
-    reviews = []  // ✅ TAMBAH INI untuk ulasan
+    reviews = [],
+    facilities = []
   } = usePage().props;
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -25,6 +26,7 @@ export default function HomePage() {
   const [filter, setFilter] = useState(currentFilter || 'all');
   const [reviewsList, setReviewsList] = useState(reviews);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [currentFacilityIndex, setCurrentFacilityIndex] = useState(0);
   const [reviewForm, setReviewForm] = useState({
     rating_facilities: 5,
     rating_hospitality: 5,
@@ -33,27 +35,65 @@ export default function HomePage() {
   });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [notification, setNotification] = useState(null);
-  const [currentReviewPage, setCurrentReviewPage] = useState(0); // ✅ TAMBAHAN BARU
+  const [currentReviewPage, setCurrentReviewPage] = useState(0);
 
-  // ✅ USEEFFECT AUTO-SLIDE REVIEW CAROUSEL (TAMBAHAN BARU)
+  // ✅ USEEFFECT AUTO-SLIDE REVIEW CAROUSEL
   useEffect(() => {
-    if (reviewsList.length < 3) return; // Jangan auto-slide jika review < 3
+    if (reviewsList.length < 3) return;
 
     const interval = setInterval(() => {
       setCurrentReviewPage((prev) => {
         const maxPage = Math.ceil(reviewsList.length / 3) - 1;
         return prev >= maxPage ? 0 : prev + 1;
       });
-    }, 3000); // 3 detik
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [reviewsList.length]);
+
+  // ✅ USEEFFECT AUTO-ROTATE FACILITIES (TERPISAH!)
+  useEffect(() => {
+    if (facilities.length < 3) return;
+
+    const interval = setInterval(() => {
+      setCurrentFacilityIndex((prev) => {
+        const totalSets = Math.ceil(facilities.length / 3);
+        return (prev + 1) % totalSets;
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [facilities.length]);
 
   // Get reviews untuk halaman saat ini
   const reviewsPerPage = 3;
   const startIndex = currentReviewPage * reviewsPerPage;
   const currentReviews = reviewsList.slice(startIndex, startIndex + reviewsPerPage);
   const totalReviewPages = Math.ceil(reviewsList.length / reviewsPerPage);
+
+  // ✅ Get current facilities to display (3 items)
+  const currentFacilities = facilities.length > 0 
+    ? facilities.slice(currentFacilityIndex * 3, currentFacilityIndex * 3 + 3)
+    : [
+        {
+          id: 1,
+          name: 'Makanan & Minuman',
+          image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800',
+          description: 'Nikmati berbagai pilihan makanan dan minuman'
+        },
+        {
+          id: 2,
+          name: 'Penitipan Barang',
+          image: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=800',
+          description: 'Loker aman untuk barang berharga Anda'
+        },
+        {
+          id: 3,
+          name: 'Toilet dan Kamar Mandi',
+          image: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=800',
+          description: 'Fasilitas bersih dan terawat'
+        }
+      ];
 
   const handleFilterChange = (newFilter) => {
     setFilter(newFilter);
@@ -744,65 +784,56 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Fasilitas Section - RESPONSIVE */}
+     {/* Fasilitas Section - RESPONSIVE & DYNAMIC */}
         <div className="bg-white">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Fasilitas 1 */}
-            <div className="group cursor-pointer overflow-hidden relative h-[280px] md:h-[320px] lg:h-[350px]">
-              <img
-                src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800"
-                alt="Food & Beverage"
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white">
-                <span className="text-[#ffd22f] text-sm md:text-base lg:text-lg font-semibold mb-1 md:mb-2 block">
-                  Fasilitas
-                </span>
-                <h3 className="text-xl md:text-2xl lg:text-3xl font-bold">
-                  Makanan & Minuman
-                </h3>
+            {currentFacilities.length > 0 ? (
+              currentFacilities.map((facility) => (
+                <div 
+                  key={facility.id}
+                  className="group cursor-pointer overflow-hidden relative h-[280px] md:h-[320px] lg:h-[350px]"
+                >
+                  <img
+                    src={facility.image || 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800'}
+                    alt={facility.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    onError={(e) => {
+                      e.target.onerror = null; // Prevent infinite loop
+                      e.target.src = 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white">
+                    <span className="text-[#ffd22f] text-sm md:text-base lg:text-lg font-semibold mb-1 md:mb-2 block">
+                      Fasilitas
+                    </span>
+                    <h3 className="text-xl md:text-2xl lg:text-3xl font-bold">
+                      {facility.name}
+                    </h3>
+                    {facility.description && (
+                      <p className="text-sm text-gray-300 mt-2 line-clamp-2">
+                        {facility.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full bg-gray-50 py-16 px-4">
+                <div className="text-center max-w-md mx-auto">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Belum Ada Fasilitas</h3>
+                  <p className="text-sm text-gray-500">Data fasilitas akan ditampilkan di sini</p>
+                </div>
               </div>
-            </div>
-
-            {/* Fasilitas 2 */}
-            <div className="group cursor-pointer overflow-hidden relative h-[280px] md:h-[320px] lg:h-[350px]">
-              <img
-                src="https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=800"
-                alt="Storage Lockers"
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white">
-                <span className="text-[#ffd22f] text-sm md:text-base lg:text-lg font-semibold mb-1 md:mb-2 block">
-                  Fasilitas
-                </span>
-                <h3 className="text-xl md:text-2xl lg:text-3xl font-bold">
-                  Penitipan Barang
-                </h3>
-              </div>
-            </div>
-
-            {/* Fasilitas 3 */}
-            <div className="group cursor-pointer overflow-hidden relative h-[280px] md:h-[320px] lg:h-[350px]">
-              <img
-                src="https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=800"
-                alt="Restroom & Shower"
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white">
-                <span className="text-[#ffd22f] text-sm md:text-base lg:text-lg font-semibold mb-1 md:mb-2 block">
-                  Fasilitas
-                </span>
-                <h3 className="text-xl md:text-2xl lg:text-3xl font-bold">
-                  Toilet dan Kamar Mandi
-                </h3>
-              </div>
-            </div>
+            )}
           </div>
         </div>
-
+        
         <div className="bg-[#ffd22f] py-6">
           <div className="max-w-7xl mx-auto px-4 flex justify-end items-center gap-4"></div>
         </div>

@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\TeamResource\Pages;
+use App\Filament\Admin\Resources\TeamResource\RelationManagers\CategoriesRelationManager;
 use App\Filament\Admin\Resources\TeamResource\RelationManagers\PlayersRelationManager;
 use App\Models\Team;
 use Filament\Forms;
@@ -116,14 +117,20 @@ class TeamResource extends Resource
                     ->sortable()
                     ->toggleable(),
 
+                Tables\Columns\TextColumn::make('categories_count')
+                    ->counts('categories')
+                    ->label('Categories')
+                    ->sortable()
+                    ->badge()
+                    ->color('warning')
+                    ->tooltip('Total team categories (U-16, U-22, etc.)'),
+
                 Tables\Columns\TextColumn::make('players_count')
                     ->counts('players')
                     ->label('Total Players')
                     ->sortable()
                     ->badge()
                     ->color('info'),
-
-               
 
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Active')
@@ -159,6 +166,11 @@ class TeamResource extends Resource
                     ->query(fn ($query) => $query->whereHas('players', function ($q) {
                         $q->where('is_active', true);
                     }, '>=', 5))
+                    ->toggle(),
+
+                Tables\Filters\Filter::make('has_categories')
+                    ->label('Has Categories')
+                    ->query(fn ($query) => $query->has('categories'))
                     ->toggle(),
             ])
             ->actions([
@@ -303,6 +315,7 @@ class TeamResource extends Resource
     public static function getRelations(): array
     {
         return [
+            CategoriesRelationManager::class,
             PlayersRelationManager::class,
         ];
     }

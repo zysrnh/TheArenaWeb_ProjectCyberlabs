@@ -18,6 +18,10 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
   const [isProcessing, setIsProcessing] = useState(false);
   const [reviewsList, setReviewsList] = useState(reviews);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [mobileStartIndex, setMobileStartIndex] = useState(0);
+  const MOBILE_DATES_SHOWN = 5;
+  const [showDatePicker, setShowDatePicker] = useState(false); // ✅ DITAMBAHKAN
+
   const [reviewForm, setReviewForm] = useState({
     rating_facilities: 5,
     rating_hospitality: 5,
@@ -25,6 +29,26 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
     comment: ''
   });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  const getVisibleDates = () => {
+    if (window.innerWidth >= 640) { // sm breakpoint
+      return validSchedules;
+    }
+    return validSchedules.slice(mobileStartIndex, mobileStartIndex + MOBILE_DATES_SHOWN);
+  };
+
+  const handleMobileDateNav = (direction) => {
+    if (direction === 'next') {
+      if (mobileStartIndex + MOBILE_DATES_SHOWN < validSchedules.length) {
+        setMobileStartIndex(mobileStartIndex + 1);
+      }
+    } else {
+      if (mobileStartIndex > 0) {
+        setMobileStartIndex(mobileStartIndex - 1);
+      }
+    }
+  };
+
 
   // FUNGSI UNTUK REVIEW
   const fetchReviews = async () => {
@@ -110,6 +134,7 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
     }
     setShowReviewModal(true);
   };
+  
   // Update date when schedules change (misalnya saat ganti minggu)
   useEffect(() => {
     if (validSchedules.length > 0 && !selectedDate) {
@@ -129,6 +154,23 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
       fetchTimeSlots();
     }
   }, [selectedDate, venue?.venue_type]);
+  
+  useEffect(() => {
+    setMobileStartIndex(0);
+  }, [weekOffset]);
+  
+  // ✅ DITAMBAHKAN: Close date picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showDatePicker && !event.target.closest('.date-picker-container')) {
+        setShowDatePicker(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDatePicker]);
+  
   const fetchTimeSlots = async () => {
     setLoading(true);
     try {
@@ -180,6 +222,46 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
     });
   };
 
+  // ✅ DITAMBAHKAN: Handle jump ke minggu tertentu
+  const handleJumpToWeek = (weekNumber) => {
+    if (weekNumber < 0) return;
+    
+    setSelectedTimeSlots([]);
+    setShowDatePicker(false);
+    
+    router.visit(`/booking?venue=${venue.venue_type}&week=${weekNumber}`, {
+      preserveScroll: false,
+      preserveState: false,
+      replace: false,
+    });
+  };
+
+  // ✅ DITAMBAHKAN: Generate list minggu untuk dropdown
+  const getWeeksInMonth = () => {
+    const weeks = [];
+    // Generate 12 minggu ke depan (sekitar 3 bulan)
+    for (let i = 0; i <= 12; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() + (i * 7));
+      const endDate = new Date(date);
+      endDate.setDate(endDate.getDate() + 6);
+      
+      weeks.push({
+        weekNumber: i,
+        label: i === 0 ? 'Minggu Ini' : `Minggu +${i}`,
+        dateRange: `${date.getDate()} - ${endDate.getDate()} ${date.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}`
+      });
+    }
+    return weeks;
+  };
+
+  // ✅ DITAMBAHKAN: Get current month and year for display
+  const getCurrentMonthYear = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + (weekOffset * 7));
+    return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  };
+
   const handleBooking = () => {
     if (selectedTimeSlots.length === 0) {
       alert("Silakan pilih minimal 1 slot waktu");
@@ -221,7 +303,7 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
           venue_id: venue?.id,
           date: selectedDate,
           time_slots: selectedTimeSlots,
-          venue_type: venue.venue_type, // Ambil dari venue object
+          venue_type: venue.venue_type,
         }),
       });
 
@@ -493,6 +575,7 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
 
                   {validSchedules.length > 0 && (
                     <>
+                      {/* ✅ SECTION PILIH TANGGAL - DIUBAH */}
                       <div>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
                           <h2 className="text-xl sm:text-2xl font-bold text-white">Pilih Tanggal</h2>
@@ -507,9 +590,47 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                             >
                               <ChevronLeft className={`w-4 h-4 sm:w-5 sm:h-5 ${weekOffset === 0 ? 'text-white/50' : 'text-[#013064]'}`} />
                             </button>
-                            <span className="text-white font-semibold px-2 sm:px-4 text-sm sm:text-base">
-                              {weekOffset === 0 ? 'Minggu Ini' : `Minggu +${weekOffset}`}
-                            </span>
+                            
+                            {/* Date Picker Button */}
+                            <div className="relative date-picker-container">
+                              <button
+                                onClick={() => setShowDatePicker(!showDatePicker)}
+                                className="px-3 sm:px-4 py-2 bg-white hover:bg-[#ffd22f] rounded-full transition flex items-center gap-2"
+                              >
+                                <Calendar className="w-4 h-4 text-[#013064]" />
+                                <span className="text-[#013064] font-semibold text-sm sm:text-base">
+                                  {getCurrentMonthYear()}
+                                </span>
+                              </button>
+
+                              {/* Dropdown Date Picker */}
+                              {showDatePicker && (
+                                <div className="absolute top-full mt-2 right-0 bg-white rounded-lg shadow-xl border-2 border-[#013064] z-50 w-64 max-h-80 overflow-y-auto">
+                                  <div className="p-2">
+                                    <div className="bg-[#013064] text-white px-3 py-2 rounded-t-lg font-bold text-sm mb-2">
+                                      Pilih Minggu
+                                    </div>
+                                    {getWeeksInMonth().map((week) => (
+                                      <button
+                                        key={week.weekNumber}
+                                        onClick={() => handleJumpToWeek(week.weekNumber)}
+                                        className={`w-full text-left px-4 py-3 rounded-lg transition hover:bg-[#ffd22f]/20 ${
+                                          weekOffset === week.weekNumber
+                                            ? 'bg-[#ffd22f] text-[#013064] font-bold'
+                                            : 'text-[#013064]'
+                                        }`}
+                                      >
+                                        <div className="flex justify-between items-center">
+                                          <span className="font-semibold text-xs">{week.label}</span>
+                                          <span className="text-xs opacity-70">{week.dateRange}</span>
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
                             <button
                               onClick={() => handleWeekChange('next')}
                               className="p-2 rounded-full bg-white hover:bg-[#ffd22f] transition"
@@ -519,23 +640,61 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                           </div>
                         </div>
 
-                        <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-                          {validSchedules.map((schedule) => (
-                            <button
-                              key={schedule.date}
-                              onClick={() => !schedule.is_past && setSelectedDate(schedule.date)}
-                              disabled={schedule.is_past}
-                              className={`flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-none transition ${schedule.is_past
-                                ? 'bg-gray-400 cursor-not-allowed opacity-50'
-                                : selectedDate === schedule.date
-                                  ? "bg-[#ffd22f] text-[#013064]"
-                                  : "bg-white text-[#013064] hover:bg-[#ffd22f]"
-                                }`}
-                            >
-                              <span className="text-[10px] sm:text-xs mb-1">{schedule.day_name}</span>
-                              <span className="text-2xl sm:text-3xl font-bold">{schedule.date_number}</span>
-                            </button>
-                          ))}
+                        {/* Date Selector dengan Navigation untuk Mobile */}
+                        <div className="relative">
+                          {/* Mobile Navigation - Tampil hanya di mobile */}
+                          <div className="sm:hidden">
+                            {mobileStartIndex > 0 && (
+                              <button
+                                onClick={() => handleMobileDateNav('prev')}
+                                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg"
+                              >
+                                <ChevronLeft className="w-5 h-5 text-[#013064]" />
+                              </button>
+                            )}
+
+                            {mobileStartIndex + MOBILE_DATES_SHOWN < validSchedules.length && (
+                              <button
+                                onClick={() => handleMobileDateNav('next')}
+                                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg"
+                              >
+                                <ChevronRight className="w-5 h-5 text-[#013064]" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Date Buttons */}
+                          <div className="flex gap-2 sm:gap-3 overflow-hidden sm:overflow-x-auto pb-4 px-10 sm:px-0">
+                            {getVisibleDates().map((schedule) => (
+                              <button
+                                key={schedule.date}
+                                onClick={() => !schedule.is_past && setSelectedDate(schedule.date)}
+                                disabled={schedule.is_past}
+                                className={`flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 sm:w-24 sm:h-24 rounded-none transition ${schedule.is_past
+                                  ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                                  : selectedDate === schedule.date
+                                    ? "bg-[#ffd22f] text-[#013064]"
+                                    : "bg-white text-[#013064] hover:bg-[#ffd22f]"
+                                  }`}
+                              >
+                                <span className="text-[10px] sm:text-xs mb-1">{schedule.day_name}</span>
+                                <span className="text-xl sm:text-3xl font-bold">{schedule.date_number}</span>
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Mobile Indicator - Tampil hanya di mobile */}
+                          <div className="sm:hidden flex justify-center gap-1 mt-2">
+                            {Array.from({ length: Math.ceil(validSchedules.length / MOBILE_DATES_SHOWN) }).map((_, idx) => (
+                              <div
+                                key={idx}
+                                className={`h-1 rounded-full transition-all ${idx === Math.floor(mobileStartIndex / MOBILE_DATES_SHOWN)
+                                  ? 'w-6 bg-[#ffd22f]'
+                                  : 'w-1 bg-white/30'
+                                  }`}
+                              />
+                            ))}
+                          </div>
                         </div>
                       </div>
 
@@ -576,6 +735,7 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                           })}
                         </div>
                       </div>
+                      
                       <div>
                         <h2 className="text-2xl font-bold text-white mb-4">Pilih Jadwal Lapangan</h2>
 
@@ -732,9 +892,7 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                 <div className="grid md:grid-cols-2 gap-6">
                   {reviewsList.map((review) => (
                     <div key={review.id} className="bg-white/10 backdrop-blur-sm p-6 rounded-lg border border-white/20">
-                      {/* Header: Profile + Name + Time */}
                       <div className="flex items-start gap-4 mb-5">
-                        {/* Profile Image atau Inisial */}
                         {review.client_profile_image ? (
                           <img
                             src={`/storage/${review.client_profile_image}`}
@@ -755,16 +913,13 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                           </span>
                         </div>
 
-                        {/* Name + Time */}
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-bold text-lg mb-1">{review.client_name}</p>
                           <span className="text-white/50 text-sm">{review.created_at}</span>
                         </div>
                       </div>
 
-                      {/* Rating Details - 3 Aspek dengan styling lebih baik */}
                       <div className="space-y-3 mb-5 bg-white/5 rounded-lg p-4">
-                        {/* Fasilitas */}
                         <div className="flex items-center justify-between">
                           <span className="text-white font-semibold text-sm min-w-[90px]">Fasilitas</span>
                           <div className="flex gap-1">
@@ -779,7 +934,6 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                           </div>
                         </div>
 
-                        {/* Keramahan */}
                         <div className="flex items-center justify-between">
                           <span className="text-white font-semibold text-sm min-w-[90px]">Keramahan</span>
                           <div className="flex gap-1">
@@ -794,7 +948,6 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                           </div>
                         </div>
 
-                        {/* Kebersihan */}
                         <div className="flex items-center justify-between">
                           <span className="text-white font-semibold text-sm min-w-[90px]">Kebersihan</span>
                           <div className="flex gap-1">
@@ -810,7 +963,6 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                         </div>
                       </div>
 
-                      {/* Comment dengan divider */}
                       <div className="border-t border-white/10 pt-4">
                         <p className="text-white/90 leading-relaxed text-sm">
                           {review.comment}
@@ -955,7 +1107,6 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
               </button>
             </div>
 
-            {/* Rating Fasilitas */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-[#013064] mb-2">
                 Fasilitas
@@ -976,7 +1127,6 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
               </div>
             </div>
 
-            {/* Rating Keramahan */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-[#013064] mb-2">
                 Keramahan
@@ -997,7 +1147,6 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
               </div>
             </div>
 
-            {/* Rating Kebersihan */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-[#013064] mb-2">
                 Kebersihan
@@ -1018,7 +1167,6 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
               </div>
             </div>
 
-            {/* Comment */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-[#013064] mb-2">
                 Komentar (minimal 10 karakter)
@@ -1035,7 +1183,6 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
               </p>
             </div>
 
-            {/* Buttons */}
             <div className="flex gap-3">
               <button
                 onClick={() => setShowReviewModal(false)}
@@ -1061,7 +1208,7 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
             </div>
           </div>
         </div>
-      )}    </>
+      )}
+    </>
   );
 }
-

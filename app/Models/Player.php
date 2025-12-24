@@ -21,6 +21,7 @@ class Player extends Model
         'weight',
         'birth_date',
         'is_active',
+        'team_category_id',
     ];
 
     protected $casts = [
@@ -47,4 +48,8 @@ class Player extends Model
     {
         return $this->hasMany(PlayerStat::class);
     }
+    public function teamCategory(): BelongsTo
+{
+    return $this->belongsTo(TeamCategory::class);
+}
 }
