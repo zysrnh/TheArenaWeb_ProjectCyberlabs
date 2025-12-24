@@ -89,7 +89,7 @@ export default function MatchDetail({ auth, match, matchHighlights = [], related
                 </div>
 
                 <div className="flex items-center justify-between gap-8">
-                  {/* Team 1 */}
+                 {/* Team 1 */}
                   <div className="flex flex-col items-center flex-1">
                     <img
                       src={match.team1.logo}
@@ -99,6 +99,11 @@ export default function MatchDetail({ auth, match, matchHighlights = [], related
                     <h3 className="text-white text-xl md:text-2xl font-bold text-center">
                       {match.team1.name}
                     </h3>
+                    {match.team1.category && (
+                      <p className="text-gray-300 text-sm mt-2 text-center">
+                        {match.team1.category.name}
+                      </p>
+                    )}
                   </div>
 
                   {/* Score */}
@@ -114,7 +119,7 @@ export default function MatchDetail({ auth, match, matchHighlights = [], related
                     )}
                   </div>
 
-                  {/* Team 2 */}
+             {/* Team 1 */}
                   <div className="flex flex-col items-center flex-1">
                     <img
                       src={match.team2.logo}
@@ -124,6 +129,11 @@ export default function MatchDetail({ auth, match, matchHighlights = [], related
                     <h3 className="text-white text-xl md:text-2xl font-bold text-center">
                       {match.team2.name}
                     </h3>
+                    {match.team2.category && (
+                      <p className="text-gray-300 text-sm mt-2 text-center">
+                        {match.team2.category.name}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

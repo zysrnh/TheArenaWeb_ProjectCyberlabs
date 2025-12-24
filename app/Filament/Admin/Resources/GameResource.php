@@ -113,93 +113,93 @@ class GameResource extends Resource
                     ->columns(2)
                     ->collapsible(),
 
-               // ============ SECTION 2: TEAMS & CATEGORIES ============
-Forms\Components\Section::make('Teams & Categories')
-    ->schema([
-        // Team 1 Selection
-        Forms\Components\Select::make('team1_id')
-            ->label('Home Team')
-            ->relationship('team1', 'name')
-            ->searchable()
-            ->preload()
-            ->required()
-            ->disabled(fn($operation) => $operation === 'edit')
-            ->dehydrated()
-            ->live()
-            ->afterStateUpdated(function ($state, $set) {
-                // Reset category when team changes
-                $set('team1_category_id', null);
-            })
-            ->disableOptionWhen(function ($value, $get) {
-                return $value === $get('team2_id');
-            }),
+                // ============ SECTION 2: TEAMS & CATEGORIES ============
+                Forms\Components\Section::make('Teams & Categories')
+                    ->schema([
+                        // Team 1 Selection
+                        Forms\Components\Select::make('team1_id')
+                            ->label('Home Team')
+                            ->relationship('team1', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->disabled(fn($operation) => $operation === 'edit')
+                            ->dehydrated()
+                            ->live()
+                            ->afterStateUpdated(function ($state, $set) {
+                                // Reset category when team changes
+                                $set('team1_category_id', null);
+                            })
+                            ->disableOptionWhen(function ($value, $get) {
+                                return $value === $get('team2_id');
+                            }),
 
-        // Team 1 Category Selection
-        Forms\Components\Select::make('team1_category_id')
-            ->label('Home Team Category')
-            ->options(function ($get) {
-                $teamId = $get('team1_id');
-                if (!$teamId) return [];
-                
-                return \App\Models\TeamCategory::where('team_id', $teamId)
-                    ->where('is_active', true)
-                    ->get()
-                    ->mapWithKeys(function ($category) {
-                        return [
-                            $category->id => "{$category->category_name} ({$category->age_group})"
-                        ];
-                    });
-            })
-            ->searchable()
-            ->nullable()
-            ->disabled(fn($operation) => $operation === 'edit')
-            ->dehydrated()
-            ->helperText('Optional - Select if match is for specific age category')
-            ->hidden(fn($get) => !$get('team1_id')),
+                        // Team 1 Category Selection
+                        Forms\Components\Select::make('team1_category_id')
+                            ->label('Home Team Category')
+                            ->options(function ($get) {
+                                $teamId = $get('team1_id');
+                                if (!$teamId) return [];
 
-        // Team 2 Selection
-        Forms\Components\Select::make('team2_id')
-            ->label('Away Team')
-            ->relationship('team2', 'name')
-            ->searchable()
-            ->preload()
-            ->required()
-            ->disabled(fn($operation) => $operation === 'edit')
-            ->dehydrated()
-            ->live()
-            ->afterStateUpdated(function ($state, $set) {
-                // Reset category when team changes
-                $set('team2_category_id', null);
-            })
-            ->disableOptionWhen(function ($value, $get) {
-                return $value === $get('team1_id');
-            }),
+                                return \App\Models\TeamCategory::where('team_id', $teamId)
+                                    ->where('is_active', true)
+                                    ->get()
+                                    ->mapWithKeys(function ($category) {
+                                        return [
+                                            $category->id => "{$category->category_name} ({$category->age_group})"
+                                        ];
+                                    });
+                            })
+                            ->searchable()
+                            ->nullable()
+                            ->disabled(fn($operation) => $operation === 'edit')
+                            ->dehydrated()
+                            ->helperText('Optional - Select if match is for specific age category')
+                            ->hidden(fn($get) => !$get('team1_id')),
 
-        // Team 2 Category Selection
-        Forms\Components\Select::make('team2_category_id')
-            ->label('Away Team Category')
-            ->options(function ($get) {
-                $teamId = $get('team2_id');
-                if (!$teamId) return [];
-                
-                return \App\Models\TeamCategory::where('team_id', $teamId)
-                    ->where('is_active', true)
-                    ->get()
-                    ->mapWithKeys(function ($category) {
-                        return [
-                            $category->id => "{$category->category_name} ({$category->age_group})"
-                        ];
-                    });
-            })
-            ->searchable()
-            ->nullable()
-            ->disabled(fn($operation) => $operation === 'edit')
-            ->dehydrated()
-            ->helperText('Optional - Select if match is for specific age category')
-            ->hidden(fn($get) => !$get('team2_id')),
-    ])
-    ->columns(2)
-    ->collapsible(),
+                        // Team 2 Selection
+                        Forms\Components\Select::make('team2_id')
+                            ->label('Away Team')
+                            ->relationship('team2', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->disabled(fn($operation) => $operation === 'edit')
+                            ->dehydrated()
+                            ->live()
+                            ->afterStateUpdated(function ($state, $set) {
+                                // Reset category when team changes
+                                $set('team2_category_id', null);
+                            })
+                            ->disableOptionWhen(function ($value, $get) {
+                                return $value === $get('team1_id');
+                            }),
+
+                        // Team 2 Category Selection
+                        Forms\Components\Select::make('team2_category_id')
+                            ->label('Away Team Category')
+                            ->options(function ($get) {
+                                $teamId = $get('team2_id');
+                                if (!$teamId) return [];
+
+                                return \App\Models\TeamCategory::where('team_id', $teamId)
+                                    ->where('is_active', true)
+                                    ->get()
+                                    ->mapWithKeys(function ($category) {
+                                        return [
+                                            $category->id => "{$category->category_name} ({$category->age_group})"
+                                        ];
+                                    });
+                            })
+                            ->searchable()
+                            ->nullable()
+                            ->disabled(fn($operation) => $operation === 'edit')
+                            ->dehydrated()
+                            ->helperText('Optional - Select if match is for specific age category')
+                            ->hidden(fn($get) => !$get('team2_id')),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
 
                 // ============ SECTION 3: STATUS ============
                 Forms\Components\Section::make('Match Status')
@@ -623,9 +623,17 @@ Forms\Components\Section::make('Teams & Categories')
                                     ->label('Player')
                                     ->options(function ($livewire) {
                                         if (!$livewire->record) return [];
-                                        return Player::where('team_id', $livewire->record->team1_id)
-                                            ->where('is_active', true)
-                                            ->orderBy('jersey_no')
+
+                                        // ✅ Query dengan filter category
+                                        $query = Player::where('team_id', $livewire->record->team1_id)
+                                            ->where('is_active', true);
+
+                                        // ✅ Filter by category jika ada
+                                        if ($livewire->record->team1_category_id) {
+                                            $query->where('team_category_id', $livewire->record->team1_category_id);
+                                        }
+
+                                        return $query->orderBy('jersey_no')
                                             ->get()
                                             ->mapWithKeys(function ($player) {
                                                 return [$player->id => "#{$player->jersey_no} {$player->name} ({$player->position})"];
@@ -673,16 +681,31 @@ Forms\Components\Section::make('Teams & Categories')
                             ->columns(6)
                             ->defaultItems(function ($livewire) {
                                 if (!$livewire->record || !$livewire->record->team1_id) return 0;
-                                return Player::where('team_id', $livewire->record->team1_id)
-                                    ->where('is_active', true)
-                                    ->count();
+
+                                // ✅ Query dengan filter category
+                                $query = Player::where('team_id', $livewire->record->team1_id)
+                                    ->where('is_active', true);
+
+                                // ✅ Filter by category jika ada
+                                if ($livewire->record->team1_category_id) {
+                                    $query->where('team_category_id', $livewire->record->team1_category_id);
+                                }
+
+                                return $query->count();
                             })
                             ->default(function ($livewire) {
                                 if (!$livewire->record || !$livewire->record->team1_id) return [];
 
-                                return Player::where('team_id', $livewire->record->team1_id)
-                                    ->where('is_active', true)
-                                    ->orderBy('jersey_no')
+                                // ✅ Query dengan filter category
+                                $query = Player::where('team_id', $livewire->record->team1_id)
+                                    ->where('is_active', true);
+
+                                // ✅ Filter by category jika ada
+                                if ($livewire->record->team1_category_id) {
+                                    $query->where('team_category_id', $livewire->record->team1_category_id);
+                                }
+
+                                return $query->orderBy('jersey_no')
                                     ->get()
                                     ->map(function ($player) {
                                         return [
@@ -722,9 +745,17 @@ Forms\Components\Section::make('Teams & Categories')
                                     ->label('Player')
                                     ->options(function ($livewire) {
                                         if (!$livewire->record) return [];
-                                        return Player::where('team_id', $livewire->record->team2_id)
-                                            ->where('is_active', true)
-                                            ->orderBy('jersey_no')
+
+                                        // ✅ Query dengan filter category
+                                        $query = Player::where('team_id', $livewire->record->team2_id)
+                                            ->where('is_active', true);
+
+                                        // ✅ Filter by category jika ada
+                                        if ($livewire->record->team2_category_id) {
+                                            $query->where('team_category_id', $livewire->record->team2_category_id);
+                                        }
+
+                                        return $query->orderBy('jersey_no')
                                             ->get()
                                             ->mapWithKeys(function ($player) {
                                                 return [$player->id => "#{$player->jersey_no} {$player->name} ({$player->position})"];
@@ -772,16 +803,31 @@ Forms\Components\Section::make('Teams & Categories')
                             ->columns(6)
                             ->defaultItems(function ($livewire) {
                                 if (!$livewire->record || !$livewire->record->team2_id) return 0;
-                                return Player::where('team_id', $livewire->record->team2_id)
-                                    ->where('is_active', true)
-                                    ->count();
+
+                                // ✅ Query dengan filter category
+                                $query = Player::where('team_id', $livewire->record->team2_id)
+                                    ->where('is_active', true);
+
+                                // ✅ Filter by category jika ada
+                                if ($livewire->record->team2_category_id) {
+                                    $query->where('team_category_id', $livewire->record->team2_category_id);
+                                }
+
+                                return $query->count();
                             })
                             ->default(function ($livewire) {
                                 if (!$livewire->record || !$livewire->record->team2_id) return [];
 
-                                return Player::where('team_id', $livewire->record->team2_id)
-                                    ->where('is_active', true)
-                                    ->orderBy('jersey_no')
+                                // ✅ Query dengan filter category
+                                $query = Player::where('team_id', $livewire->record->team2_id)
+                                    ->where('is_active', true);
+
+                                // ✅ Filter by category jika ada
+                                if ($livewire->record->team2_category_id) {
+                                    $query->where('team_category_id', $livewire->record->team2_category_id);
+                                }
+
+                                return $query->orderBy('jersey_no')
                                     ->get()
                                     ->map(function ($player) {
                                         return [
@@ -859,26 +905,28 @@ Forms\Components\Section::make('Teams & Categories')
                     ->description(fn(Game $record): string => $record->time ? $record->time->format('H:i') . ' WIB' : ''),
 
                 Tables\Columns\TextColumn::make('team1.name')
-    ->label('Home Team')
-    ->searchable()
-    ->sortable()
-    ->weight('medium')
-    ->description(fn(Game $record): ?string => 
-        $record->team1Category 
-            ? $record->team1Category->category_name . ' (' . $record->team1Category->age_group . ')'
-            : null
-    ),
+                    ->label('Home Team')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('medium')
+                    ->description(
+                        fn(Game $record): ?string =>
+                        $record->team1Category
+                            ? $record->team1Category->category_name . ' (' . $record->team1Category->age_group . ')'
+                            : null
+                    ),
 
-Tables\Columns\TextColumn::make('team2.name')
-    ->label('Away Team')
-    ->searchable()
-    ->sortable()
-    ->weight('medium')
-    ->description(fn(Game $record): ?string => 
-        $record->team2Category 
-            ? $record->team2Category->category_name . ' (' . $record->team2Category->age_group . ')'
-            : null
-    ),
+                Tables\Columns\TextColumn::make('team2.name')
+                    ->label('Away Team')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('medium')
+                    ->description(
+                        fn(Game $record): ?string =>
+                        $record->team2Category
+                            ? $record->team2Category->category_name . ' (' . $record->team2Category->age_group . ')'
+                            : null
+                    ),
 
                 Tables\Columns\TextColumn::make('score')
                     ->label('Score')
@@ -1017,9 +1065,15 @@ Tables\Columns\TextColumn::make('team2.name')
 
                         // ✅ Auto-load players jika belum ada data
                         if (empty($boxScoreTeam1)) {
-                            $boxScoreTeam1 = Player::where('team_id', $record->team1_id)
-                                ->where('is_active', true)
-                                ->orderBy('jersey_no')
+                            $query = Player::where('team_id', $record->team1_id)
+                                ->where('is_active', true);
+
+                            // ✅ Filter by category
+                            if ($record->team1_category_id) {
+                                $query->where('team_category_id', $record->team1_category_id);
+                            }
+
+                            $boxScoreTeam1 = $query->orderBy('jersey_no')
                                 ->get()
                                 ->map(function ($player) {
                                     return [
@@ -1033,11 +1087,16 @@ Tables\Columns\TextColumn::make('team2.name')
                                 })
                                 ->toArray();
                         }
-
                         if (empty($boxScoreTeam2)) {
-                            $boxScoreTeam2 = Player::where('team_id', $record->team2_id)
-                                ->where('is_active', true)
-                                ->orderBy('jersey_no')
+                            $query = Player::where('team_id', $record->team2_id)
+                                ->where('is_active', true);
+
+                            // ✅ Filter by category
+                            if ($record->team2_category_id) {
+                                $query->where('team_category_id', $record->team2_category_id);
+                            }
+
+                            $boxScoreTeam2 = $query->orderBy('jersey_no')
                                 ->get()
                                 ->map(function ($player) {
                                     return [
@@ -1080,34 +1139,34 @@ Tables\Columns\TextColumn::make('team2.name')
                             'stat_pot_team2' => $record->stat_pot_team2,
                         ];
                     })
-                   ->form([
-    // ============ SECTION 0: MATCH STATUS (NEW) ============
-    Forms\Components\Section::make('Match Status')
-        ->description('Update status pertandingan')
-        ->schema([
-            Forms\Components\Select::make('status')
-                ->label('Status')
-                ->options([
-                    'upcoming' => 'Upcoming',
-                    'live' => 'Live',
-                    'finished' => 'Finished',
-                ])
-                ->required()
-                ->default(fn($record) => $record->status)
-                ->live()
-                ->afterStateUpdated(function ($state, $record) {
-                    $record->update(['status' => $state]);
-                    
-                    Notification::make()
-                        ->title('Status Updated!')
-                        ->body("Status changed to: {$state}")
-                        ->success()
-                        ->send();
-                })
-                ->helperText('Status akan otomatis tersimpan saat Anda mengubahnya'),
-        ])
-        ->columns(1)
-        ->collapsible(),
+                    ->form([
+                        // ============ SECTION 0: MATCH STATUS (NEW) ============
+                        Forms\Components\Section::make('Match Status')
+                            ->description('Update status pertandingan')
+                            ->schema([
+                                Forms\Components\Select::make('status')
+                                    ->label('Status')
+                                    ->options([
+                                        'upcoming' => 'Upcoming',
+                                        'live' => 'Live',
+                                        'finished' => 'Finished',
+                                    ])
+                                    ->required()
+                                    ->default(fn($record) => $record->status)
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, $record) {
+                                        $record->update(['status' => $state]);
+
+                                        Notification::make()
+                                            ->title('Status Updated!')
+                                            ->body("Status changed to: {$state}")
+                                            ->success()
+                                            ->send();
+                                    })
+                                    ->helperText('Status akan otomatis tersimpan saat Anda mengubahnya'),
+                            ])
+                            ->columns(1)
+                            ->collapsible(),
                         // ============ SECTION 1: QUARTER SCORES ============
                         Forms\Components\Section::make('Quarter Scores')
                             ->schema([

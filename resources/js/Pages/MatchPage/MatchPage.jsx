@@ -323,17 +323,25 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                     <Link key={match.id} href={`/jadwal-hasil/${match.id}`}>
                       <div className="bg-white py-5 px-5 md:py-6 md:px-6 relative hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer min-h-[250px] md:min-h-[300px] flex flex-col">
                         <div className="flex items-center justify-center gap-4 md:gap-6 lg:gap-8 flex-1">
-                          {/* Team 1 - Logo Only */}
-                          <div className="flex flex-col items-center justify-center flex-1">
-                            <img
-                              src={match.team1.logo}
-                              alt={match.team1.name}
-                              className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain"
-                              onError={(e) => {
-                                e.target.src = '/images/default-team-logo.png';
-                              }}
-                            />
-                          </div>
+                          {/* Team 1 - Logo + Category */}
+<div className="flex flex-col items-center justify-center flex-1">
+  <img
+    src={match.team1.logo}
+    alt={match.team1.name}
+    className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain mb-2"
+    onError={(e) => {
+      e.target.src = '/images/default-team-logo.png';
+    }}
+  />
+  <p className="text-xs md:text-sm font-bold text-[#013064] text-center px-2">
+    {match.team1.name}
+  </p>
+  {match.team1.category && (
+    <p className="text-[10px] md:text-xs text-gray-600 text-center mt-1">
+      {match.team1.category.name}
+    </p>
+  )}
+</div>
 
                           {/* Match Info - Center */}
                           <div className="flex flex-col items-center justify-center min-w-[130px] md:min-w-[150px]">
@@ -370,17 +378,25 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                             )}
                           </div>
 
-                          {/* Team 2 - Logo Only */}
-                          <div className="flex flex-col items-center justify-center flex-1">
-                            <img
-                              src={match.team2.logo}
-                              alt={match.team2.name}
-                              className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain"
-                              onError={(e) => {
-                                e.target.src = '/images/default-team-logo.png';
-                              }}
-                            />
-                          </div>
+                          {/* Team 2 - Logo + Category */}
+<div className="flex flex-col items-center justify-center flex-1">
+  <img
+    src={match.team2.logo}
+    alt={match.team2.name}
+    className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain mb-2"
+    onError={(e) => {
+      e.target.src = '/images/default-team-logo.png';
+    }}
+  />
+  <p className="text-xs md:text-sm font-bold text-[#013064] text-center px-2">
+    {match.team2.name}
+  </p>
+  {match.team2.category && (
+    <p className="text-[10px] md:text-xs text-gray-600 text-center mt-1">
+      {match.team2.category.name}
+    </p>
+  )}
+</div>
                         </div>
                       </div>
                     </Link>

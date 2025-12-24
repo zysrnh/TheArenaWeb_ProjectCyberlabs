@@ -29,7 +29,7 @@ class MatchController extends Controller
         $selectedMonth = $request->input('month'); // ✅ TAMBAH INI
 
         // ✅ Tentukan base date berdasarkan selectedMonth atau sekarang
-        $baseDate = $selectedMonth 
+        $baseDate = $selectedMonth
             ? Carbon::parse($selectedMonth, 'Asia/Jakarta')->startOfMonth()
             : $jakartaNow->copy();
 
@@ -95,7 +95,7 @@ class MatchController extends Controller
         ];
 
         // Query matches dengan filter
-        $matchesQuery = Game::with(['team1', 'team2']);
+        $matchesQuery = Game::with(['team1', 'team2', 'team1Category', 'team2Category']);
 
         // Filter by series
         if ($series !== 'Semua Series') {
@@ -142,11 +142,19 @@ class MatchController extends Controller
                     'venue' => $match->venue,
                     'team1' => [
                         'name' => $match->team1->name,
-                        'logo' => $team1Logo
+                        'logo' => $team1Logo,
+                        'category' => $match->team1Category ? [
+                            'name' => $match->team1Category->category_name,
+                            'age_group' => $match->team1Category->age_group
+                        ] : null
                     ],
                     'team2' => [
                         'name' => $match->team2->name,
-                        'logo' => $team2Logo
+                        'logo' => $team2Logo,
+                        'category' => $match->team2Category ? [
+                            'name' => $match->team2Category->category_name,
+                            'age_group' => $match->team2Category->age_group
+                        ] : null
                     ],
                     'score' => $match->score
                 ];
@@ -209,16 +217,18 @@ class MatchController extends Controller
         $match = Game::with([
             'team1',
             'team2',
+            'team1Category',
+            'team2Category',
             'playerStats.player'
         ])->findOrFail($id);
 
         $quartersRaw = $match->quarters;
-        
+
         $quarters = [
             'team1' => array_map('intval', $quartersRaw['team1'] ?? [0, 0, 0, 0]),
             'team2' => array_map('intval', $quartersRaw['team2'] ?? [0, 0, 0, 0]),
         ];
-        
+
         $total1 = array_sum($quarters['team1']);
         $total2 = array_sum($quarters['team2']);
         $calculatedScore = ($total1 > 0 || $total2 > 0) ? "{$total1} - {$total2}" : null;
@@ -289,7 +299,7 @@ class MatchController extends Controller
             ->orderBy('is_featured', 'desc')
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(function($highlight) use ($match) {
+            ->map(function ($highlight) use ($match) {
                 return [
                     'id' => $highlight->id,
                     'title' => $highlight->title,
@@ -309,13 +319,13 @@ class MatchController extends Controller
             ->inRandomOrder()
             ->take(3)
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
                     'excerpt' => $item->excerpt,
-                    'image' => $item->image 
-                        ? asset('storage/' . $item->image) 
+                    'image' => $item->image
+                        ? asset('storage/' . $item->image)
                         : 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800',
                     'category' => $item->category,
                     'date' => $item->formatted_date,
@@ -332,12 +342,20 @@ class MatchController extends Controller
             'team1' => [
                 'id' => $match->team1->id,
                 'name' => $match->team1->name,
-                'logo' => $this->normalizeLogoPath($match->team1->logo, $match->team1->name)
+                'logo' => $this->normalizeLogoPath($match->team1->logo, $match->team1->name),
+                'category' => $match->team1Category ? [
+                    'name' => $match->team1Category->category_name,
+                    'age_group' => $match->team1Category->age_group
+                ] : null
             ],
             'team2' => [
                 'id' => $match->team2->id,
                 'name' => $match->team2->name,
-                'logo' => $this->normalizeLogoPath($match->team2->logo, $match->team2->name)
+                'logo' => $this->normalizeLogoPath($match->team2->logo, $match->team2->name),
+                'category' => $match->team2Category ? [
+                    'name' => $match->team2Category->category_name,
+                    'age_group' => $match->team2Category->age_group
+                ] : null
             ],
             'score' => $calculatedScore ?? $match->score,
             'quarters' => $quarters,
@@ -345,7 +363,6 @@ class MatchController extends Controller
             'boxScoreTeam1' => $match->boxScoreTeam1(),
             'boxScoreTeam2' => $match->boxScoreTeam2(),
         ];
-
         return Inertia::render('MatchPage/MatchDetail', [
             'auth' => [
                 'client' => auth('client')->user()
