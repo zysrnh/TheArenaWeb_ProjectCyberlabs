@@ -837,156 +837,163 @@ export default function HomePage() {
         <div className="bg-[#ffd22f] py-6">
           <div className="max-w-7xl mx-auto px-4 flex justify-end items-center gap-4"></div>
         </div>
+{/* Jadwal Pertandingan Section - UPDATED TO MATCH MatchPage */}
+<div className="bg-[#013064] py-12 md:py-16 px-4">
+  <div className="max-w-7xl mx-auto">
+    {/* Section Header with Filter Buttons */}
+    <div className="text-center mb-8 md:mb-12">
+      <p className="text-[#ffd22f] text-base md:text-xl lg:text-2xl font-semibold mb-2 md:mb-3">
+        Jadwal
+      </p>
+      <h2 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold mb-6 md:mb-8">
+        Jadwal Pertandingan Basket
+      </h2>
 
-        {/* Jadwal Pertandingan Section - RESPONSIVE */}
-        <div className="bg-[#013064] py-12 md:py-16 px-4">
-          <div className="max-w-7xl mx-auto">
-            {/* Section Header with Filter Buttons */}
-            <div className="text-center mb-8 md:mb-12">
-              <p className="text-[#ffd22f] text-base md:text-xl lg:text-2xl font-semibold mb-2 md:mb-3">
-                Jadwal
-              </p>
-              <h2 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold mb-6 md:mb-8">
-                Jadwal Pertandingan Basket
-              </h2>
+      {/* Filter Buttons - Updated Design */}
+      <div className="flex flex-wrap justify-center gap-0 mb-8">
+        <button
+          onClick={() => handleFilterChange('all')}
+          className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all ${
+            filter === 'all'
+              ? 'bg-[#ffd22f] text-[#013064]'
+              : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+          }`}
+        >
+          Semua
+        </button>
+        <button
+          onClick={() => handleFilterChange('live')}
+          className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all border-l-0 ${
+            filter === 'live'
+              ? 'bg-[#ffd22f] text-[#013064]'
+              : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+          }`}
+        >
+          Pertandingan Berlangsung
+        </button>
+        <button
+          onClick={() => handleFilterChange('upcoming')}
+          className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all border-l-0 ${
+            filter === 'upcoming'
+              ? 'bg-[#ffd22f] text-[#013064]'
+              : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+          }`}
+        >
+          Pertandingan Berikutnya
+        </button>
+      </div>
+    </div>
 
-              {/* Filter Buttons - Updated Design */}
-              <div className="flex flex-wrap justify-center gap-0 mb-8">
-                <button
-                  onClick={() => handleFilterChange('all')}
-                  className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all ${filter === 'all'
-                    ? 'bg-[#ffd22f] text-[#013064]'
-                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
-                    }`}
-                >
-                  Semua
-                </button>
-                <button
-                  onClick={() => handleFilterChange('live')}
-                  className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all border-l-0 ${filter === 'live'
-                    ? 'bg-[#ffd22f] text-[#013064]'
-                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
-                    }`}
-                >
-                  Pertandingan Berlangsung
-                </button>
-                <button
-                  onClick={() => handleFilterChange('upcoming')}
-                  className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all border-l-0 ${filter === 'upcoming'
-                    ? 'bg-[#ffd22f] text-[#013064]'
-                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
-                    }`}
-                >
-                  Pertandingan Berikutnya
-                </button>
+    {/* Match Cards Grid - UPDATED TO MATCH MatchPage DESIGN */}
+    {homeMatches && homeMatches.length > 0 ? (
+      <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
+        {homeMatches.map((match) => (
+          <Link key={match.id} href={`/jadwal-hasil/${match.id}`}>
+            <div className="bg-white py-5 px-5 md:py-6 md:px-6 relative hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer min-h-[250px] md:min-h-[300px] flex flex-col">
+              <div className="flex items-center justify-center gap-4 md:gap-6 lg:gap-8 flex-1">
+                {/* Team 1 */}
+                <div className="flex flex-col items-center justify-center flex-1">
+                  <img
+                    src={match.team1.logo}
+                    alt={match.team1.name}
+                    className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain mb-2"
+                    onError={(e) => {
+                      e.target.src = '/images/default-team-logo.png';
+                    }}
+                  />
+                  <p className="text-xs md:text-sm font-bold text-[#013064] text-center px-2">
+                    {match.team1.name}
+                  </p>
+                  {match.team1.category && (
+                    <p className="text-[10px] md:text-xs text-gray-600 text-center mt-1">
+                      {match.team1.category.name}
+                    </p>
+                  )}
+                </div>
+
+                {/* Match Info */}
+                <div className="flex flex-col items-center justify-center min-w-[130px] md:min-w-[150px]">
+                  {/* League/Competition - Above Badge */}
+                  <p className="text-sm md:text-base font-bold text-gray-800 mb-2 text-center">
+                    {match.league}
+                  </p>
+
+                  {/* Status Badge */}
+                  <div className="mb-1.5">
+                    <span
+                      className={`px-2.5 py-1 text-xs font-bold uppercase ${
+                        match.type === 'live'
+                          ? 'bg-red-600 text-white'
+                          : match.type === 'upcoming'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-600 text-white'
+                      }`}
+                    >
+                      {match.type === 'live'
+                        ? 'Live'
+                        : match.type === 'upcoming'
+                        ? 'Upcoming Match'
+                        : 'Selesai'}
+                    </span>
+                  </div>
+
+                  <p className="text-sm md:text-base font-bold text-gray-900 text-center">
+                    {match.date}
+                  </p>
+                  <p className="text-[11px] md:text-xs text-gray-600 mb-2.5 tracking-wider">
+                    {match.time}
+                  </p>
+                  {match.score ? (
+                    <p className="text-2xl md:text-3xl font-bold text-[#013064]">
+                      {match.score}
+                    </p>
+                  ) : (
+                    <p className="text-base md:text-lg font-medium text-gray-400">
+                      - vs -
+                    </p>
+                  )}
+                </div>
+
+                {/* Team 2 */}
+                <div className="flex flex-col items-center justify-center flex-1">
+                  <img
+                    src={match.team2.logo}
+                    alt={match.team2.name}
+                    className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain mb-2"
+                    onError={(e) => {
+                      e.target.src = '/images/default-team-logo.png';
+                    }}
+                  />
+                  <p className="text-xs md:text-sm font-bold text-[#013064] text-center px-2">
+                    {match.team2.name}
+                  </p>
+                  {match.team2.category && (
+                    <p className="text-[10px] md:text-xs text-gray-600 text-center mt-1">
+                      {match.team2.category.name}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
+          </Link>
+        ))}
+      </div>
+    ) : (
+      <div className="text-center py-12">
+        <p className="text-white text-xl">Tidak ada pertandingan tersedia</p>
+      </div>
+    )}
 
-            {/* Match Cards Grid - Updated Design with Category */}
-{homeMatches && homeMatches.length > 0 ? (
-  <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
-    {homeMatches.map((match) => (
-      <Link key={match.id} href={`/jadwal-hasil/${match.id}`}>
-        <div className="bg-white py-5 px-5 md:py-6 md:px-6 relative hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer min-h-[250px] md:min-h-[300px] flex flex-col">
-          <div className="flex items-center justify-center gap-4 md:gap-6 lg:gap-8 flex-1">
-            {/* Team 1 - Logo + Category */}
-            <div className="flex flex-col items-center justify-center flex-1">
-              <img
-                src={match.team1.logo}
-                alt={match.team1.name}
-                className="w-20 h-20 md:w-28 md:h-28 lg:w-32 lg:h-32 object-contain mb-2"
-                onError={(e) => {
-                  e.target.src = '/images/default-team-logo.png';
-                }}
-              />
-              <p className="text-xs md:text-sm font-bold text-[#013064] text-center px-2">
-                {match.team1.name}
-              </p>
-              {match.team1.category && (
-                <p className="text-[10px] md:text-xs text-gray-600 text-center mt-1">
-                  {match.team1.category.name}
-                </p>
-              )}
-            </div>
-
-            {/* Match Info - Center */}
-            <div className="flex flex-col items-center justify-center min-w-[130px] md:min-w-[150px]">
-              {/* Status Badge */}
-              <div className="mb-1.5">
-                <span className={`px-2.5 py-1 text-xs font-bold uppercase ${
-                  match.type === 'live'
-                    ? 'bg-red-600 text-white'
-                    : match.type === 'upcoming'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-600 text-white'
-                }`}>
-                  {match.type === 'live' ? 'Live' : match.type === 'upcoming' ? 'Upcoming Match' : 'Selesai'}
-                </span>
-              </div>
-
-              <p className="text-[11px] text-gray-600 mb-1.5 text-center italic">
-                {match.league}
-              </p>
-              <p className="text-sm md:text-base font-bold text-gray-900 text-center">
-                {match.day}
-              </p>
-              <p className="text-sm md:text-base font-bold text-gray-900 text-center mb-1.5">
-                {match.date}
-              </p>
-              <p className="text-[11px] md:text-xs text-gray-600 mb-2.5 tracking-wider">
-                {match.time}
-              </p>
-              {match.score ? (
-                <p className="text-2xl md:text-3xl font-bold text-[#013064]">
-                  {match.score}
-                </p>
-              ) : (
-                <p className="text-base md:text-lg font-medium text-gray-400">
-                  - vs -
-                </p>
-              )}
-            </div>
-
-            {/* Team 2 - Logo + Category */}
-            <div className="flex flex-col items-center justify-center flex-1">
-              <img
-                src={match.team2.logo}
-                alt={match.team2.name}
-                className="w-20 h-20 md:w-28 md:h-28 lg:w-32 lg:h-32 object-contain mb-2"
-                onError={(e) => {
-                  e.target.src = '/images/default-team-logo.png';
-                }}
-              />
-              <p className="text-xs md:text-sm font-bold text-[#013064] text-center px-2">
-                {match.team2.name}
-              </p>
-              {match.team2.category && (
-                <p className="text-[10px] md:text-xs text-gray-600 text-center mt-1">
-                  {match.team2.category.name}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
+    {/* Button Lihat Lebih Banyak */}
+    <div className="text-center mt-8">
+      <Link href="/jadwal-hasil">
+        <button className="bg-[#ffd22f] text-[#013064] px-10 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-bold hover:bg-[#ffe066] transition">
+          Lihat Lebih Banyak
+        </button>
       </Link>
-    ))}
+    </div>
   </div>
-) : (
-  <div className="text-center py-12">
-    <p className="text-white text-xl">Tidak ada pertandingan tersedia</p>
-  </div>
-)}
-
-            {/* Button Lihat Lebih Banyak */}
-            <div className="text-center mt-8">
-              <Link href="/jadwal-hasil">
-                <button className="bg-[#ffd22f] text-[#013064] px-10 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-bold hover:bg-[#ffe066] transition">
-                  Lihat Lebih Banyak
-                </button>
-              </Link>
-            </div>
-          </div>
-        </div>
+</div>
         {/* Live Streaming Section - RESPONSIVE */}
         <div className="bg-[#002855] py-12 px-4">
           <div className="max-w-7xl mx-auto">
