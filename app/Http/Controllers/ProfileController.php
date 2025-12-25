@@ -184,7 +184,7 @@ class ProfileController extends Controller
             'can_pay' => $canPay,
             'can_cancel' => $canCancel,
 
-            'created_at' => $booking->created_at->format('d F Y H:i'),
+            'created_at' => $booking->created_at->toIso8601String(),
         ];
 
         if ($isUpcoming && $canPay) {

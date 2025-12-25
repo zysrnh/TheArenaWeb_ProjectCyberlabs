@@ -1,10 +1,81 @@
 import { Head, Link, useForm, usePage, router } from "@inertiajs/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // ✅ Tambah useRef
 import { Phone, Mail, Calendar, User, MapPin, LogOut, Video, Clock, X, CreditCard, CheckCircle, AlertCircle, Star, MessageSquare } from "lucide-react";
 
 import Navigation from "../../Components/Navigation";
 import Footer from "../../Components/Footer";
+// ✅ GANTI PaymentTimer Component (baris 7-52)
+function PaymentTimer({ createdAt, onExpired, onAlert }) {
+  const [timeLeft, setTimeLeft] = useState(null);
+  const alertShownRef = useRef({
+    fiveMin: false,
+    twoMin: false,
+    oneMin: false
+  });
 
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const created = new Date(createdAt);
+      const expiry = new Date(created.getTime() + 10 * 60 * 1000);
+      const now = new Date();
+      const diff = expiry - now;
+
+      if (diff <= 0) {
+        if (onExpired && typeof onExpired === 'function') {
+          onExpired();
+        }
+        return null;
+      }
+
+      const minutes = Math.floor(diff / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      const totalSeconds = Math.floor(diff / 1000);
+      
+      // Alert notifications dengan type checking
+      if (onAlert && typeof onAlert === 'function') {
+        if (totalSeconds <= 300 && !alertShownRef.current.fiveMin) {
+          alertShownRef.current.fiveMin = true;
+          onAlert('⚠️ Sisa 5 menit lagi! Segera selesaikan pembayaran Anda.');
+        }
+        
+        if (totalSeconds <= 120 && !alertShownRef.current.twoMin) {
+          alertShownRef.current.twoMin = true;
+          onAlert('🚨 Sisa 2 menit lagi! Booking akan otomatis dibatalkan jika belum dibayar.');
+        }
+        
+        if (totalSeconds <= 60 && !alertShownRef.current.oneMin) {
+          alertShownRef.current.oneMin = true;
+          onAlert('🔴 SISA 1 MENIT! Segera lakukan pembayaran sekarang!');
+        }
+      }
+
+      return { minutes, seconds, total: diff };
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [createdAt, onExpired, onAlert]);
+
+  if (!timeLeft) return null;
+
+  const isUrgent = timeLeft.total < 3 * 60 * 1000;
+
+  return (
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold ${
+      isUrgent ? 'bg-red-100 text-red-800 animate-pulse' : 'bg-orange-100 text-orange-800'
+    }`}>
+      <Clock className="w-3 h-3" />
+      <span>
+        Bayar dalam: {timeLeft.minutes}:{String(timeLeft.seconds).padStart(2, '0')}
+      </span>
+    </div>
+  );
+}
 export default function Profile() {
   const { auth, upcomingBookings = [], historyBookings = {}, reviewHistory = [], flash,
     shouldShowReviewReminder, completedBookingCount } = usePage().props;
@@ -18,6 +89,8 @@ export default function Profile() {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationType, setNotificationType] = useState('success');
+  const [expiredBookings, setExpiredBookings] = useState(new Set()); // ✅ TAMBAH INI
+
 
   useEffect(() => {
     console.log('📊 Profile Page Props:', {
@@ -28,7 +101,7 @@ export default function Profile() {
       authClient: auth.client?.id
     });
   }, [shouldShowReviewReminder, completedBookingCount]);
-  
+
 
   const { data, setData, post, processing, errors } = useForm({
     name: auth.client?.name || "",
@@ -58,33 +131,19 @@ export default function Profile() {
     }
   }, [flash]);
 
-// ✅ CARI DAN GANTI useEffect REVIEW REMINDER DI Profile.jsx (sekitar baris 58-71)
+  useEffect(() => {
+    if (shouldShowReviewReminder && completedBookingCount > 0) {
+      setNotificationMessage(
+        `Anda belum menambahkan ulasan untuk ${completedBookingCount} booking sebelumnya`
+      );
+      setNotificationType('error');
+      setShowNotification(true);
 
-// ❌ HAPUS YANG INI:
-useEffect(() => {
-  if (shouldShowReviewReminder && completedBookingCount > 0) {
-    setNotificationMessage(
-      `Anda memiliki ${completedBookingCount} booking yang sudah selesai. Yuk, bagikan pengalaman Anda!`
-    );
-    setNotificationType('info');
-    setShowNotification(true);
-    
-    setTimeout(() => setShowNotification(false), 5000);
-  }
-}, [shouldShowReviewReminder, completedBookingCount]);
-useEffect(() => {
-  if (shouldShowReviewReminder && completedBookingCount > 0) {
-    setNotificationMessage(
-      `Anda belum menambahkan ulasan untuk ${completedBookingCount} booking sebelumnya`
-    );
-    setNotificationType('error');
-    setShowNotification(true);
-    
-    setTimeout(() => {
-      router.visit("/#ulasan");
-    }, 1500);
-  }
-}, [shouldShowReviewReminder, completedBookingCount]);
+      setTimeout(() => {
+        router.visit("/#ulasan");
+      }, 1500);
+    }
+  }, [shouldShowReviewReminder, completedBookingCount]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -155,6 +214,19 @@ useEffect(() => {
     return colors[color] || 'bg-gray-500';
   };
 
+  const handleBookingExpired = (bookingId) => {
+    setExpiredBookings(prev => new Set([...prev, bookingId]));
+    setTimeout(() => {
+      router.reload();
+    }, 2000);
+  };
+  const handlePaymentAlert = (message) => {
+    setNotificationMessage(message);
+    setNotificationType('error'); // Merah untuk urgent
+    setShowNotification(true);
+    setTimeout(() => setShowNotification(false), 5000); // 5 detik
+  };
+
   return (
     <>
       <Head title="THE ARENA - Profile" />
@@ -200,54 +272,54 @@ useEffect(() => {
   animation: slide-in 0.3s ease-out;
 }
       `}</style>
-{/* Notification Toast - HARUS ADA INI! */}
-{showNotification && (
-  <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
-    {/* Backdrop */}
-    <div
-      className="absolute inset-0 bg-[#013064]/80 backdrop-blur-sm"
-      onClick={() => setShowNotification(false)}
-    />
-
-    {/* Popup */}
-    <div className="relative bg-white max-w-md w-full animate-slide-in shadow-2xl">
-      <div className="border-t-4 border-red-500">
-        {/* Header */}
-        <div className="bg-[#013064] px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-red-500" />
-            <h3 className="font-bold text-white text-lg">
-              Perhatian
-            </h3>
-          </div>
-          <button
+      {/* Notification Toast - HARUS ADA INI! */}
+      {showNotification && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-[#013064]/80 backdrop-blur-sm"
             onClick={() => setShowNotification(false)}
-            className="text-white/70 hover:text-white transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 bg-white">
-          <p className="text-[#013064] text-base leading-relaxed">
-            {notificationMessage}
-          </p>
-        </div>
-
-        {/* Progress Bar - 1.5 detik */}
-        <div className="h-1 bg-gray-200 overflow-hidden">
-          <div 
-            className="h-full bg-red-500" 
-            style={{
-              animation: 'progress 1.5s linear'
-            }}
           />
+
+          {/* Popup */}
+          <div className="relative bg-white max-w-md w-full animate-slide-in shadow-2xl">
+            <div className="border-t-4 border-red-500">
+              {/* Header */}
+              <div className="bg-[#013064] px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <h3 className="font-bold text-white text-lg">
+                    Perhatian
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowNotification(false)}
+                  className="text-white/70 hover:text-white transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 bg-white">
+                <p className="text-[#013064] text-base leading-relaxed">
+                  {notificationMessage}
+                </p>
+              </div>
+
+              {/* Progress Bar - 1.5 detik */}
+              <div className="h-1 bg-gray-200 overflow-hidden">
+                <div
+                  className="h-full bg-red-500"
+                  style={{
+                    animation: 'progress 1.5s linear'
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
       <div className="min-h-screen flex flex-col bg-[#013064]">
         <Navigation activePage="profile" />
@@ -316,7 +388,9 @@ useEffect(() => {
                 </div>
               </div>
 
+
               {/* Main Content */}
+
               <div className="col-span-12 lg:col-span-9">
                 {activeTab === 'data-profil' && (
                   <form onSubmit={handleSubmit} className="space-y-6">
@@ -463,6 +537,8 @@ useEffect(() => {
                   </form>
                 )}
 
+
+
                 {activeTab === 'jadwal-booking' && (
                   <div>
                     <div className="mb-6">
@@ -472,117 +548,134 @@ useEffect(() => {
 
                     {upcomingBookings.length > 0 ? (
                       <div className="space-y-4">
-                        {upcomingBookings.map((booking, index) => (
-                          <div key={booking.id} className="bg-white rounded-lg p-6">
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <span className="text-2xl font-bold text-[#013064]">
-                                    {index + 1}.
-                                  </span>
-                                  <span className={`px-4 py-1.5 rounded text-white text-xs font-black tracking-wider ${getStatusBadge(booking.status_color)}`}>
-                                    {booking.status_label}
-                                  </span>
+                        {upcomingBookings.map((booking, index) => {
+                          const isExpired = expiredBookings.has(booking.id);
 
-                                  {/* TAMBAHAN: PAYMENT STATUS BADGE */}
-                                  {booking.is_paid ? (
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                                      <CheckCircle className="w-3 h-3" />
-                                      Terbayar
+                          return (
+                            <div key={booking.id} className={`bg-white rounded-lg p-6 ${isExpired ? 'opacity-50' : ''}`}>
+                              <div className="flex justify-between items-start mb-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                    <span className="text-2xl font-bold text-[#013064]">
+                                      {index + 1}.
                                     </span>
-                                  ) : booking.payment_status === 'pending' ? (
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
-                                      <AlertCircle className="w-3 h-3" />
-                                      Belum Bayar
+                                    <span className={`px-4 py-1.5 rounded text-white text-xs font-black tracking-wider ${getStatusBadge(booking.status_color)}`}>
+                                      {isExpired ? 'EXPIRED' : booking.status_label}
                                     </span>
-                                  ) : null}
-                                </div>
-                              </div>
 
-                              {/* TAMBAHAN: TOMBOL BAYAR & CANCEL */}
-                              <div className="flex gap-2">
-                                {booking.can_pay && (
-                                  <form
-                                    action={`/payment/process/${booking.id}`}
-                                    method="POST"
-                                    className="flex-1 md:flex-none"
-                                  >
-                                    <input type="hidden" name="_token" value={document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')} />
-                                    <button
-                                      type="submit"
-                                      className="w-full flex items-center justify-center gap-2 px-3 md:px-4 py-2 bg-[#ffd22f] text-[#013064] rounded hover:bg-[#ffe066] transition font-semibold text-sm"
-                                    >
-                                      <CreditCard className="w-4 h-4" />
-                                      <span>Bayar</span>
-                                    </button>
-                                  </form>
-                                )}
-                                {booking.can_cancel && (
-                                  <button
-                                    onClick={() => handleCancelBooking(booking)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
-                                  >
-                                    <X className="w-4 h-4" />
-                                    <span className="text-sm font-semibold">Batalkan</span>
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="space-y-3 mb-4">
-                              <div className="flex items-start gap-3">
-                                <Clock className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
-                                <div className="flex-1">
-                                  <p className="text-sm text-gray-600">Jam Sewa</p>
-                                  <p className="font-bold text-lg text-[#013064]">{booking.time_slot}</p>
-                                </div>
-                              </div>
-
-                              <div className="flex items-start gap-3">
-                                <Calendar className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
-                                <div className="flex-1">
-                                  <p className="text-sm text-gray-600">Tanggal</p>
-                                  <p className="font-bold text-lg text-[#013064]">{booking.booking_date}</p>
-                                </div>
-                              </div>
-
-                              <div className="flex items-start gap-3">
-                                <MapPin className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
-                                <div className="flex-1">
-                                  <p className="text-sm text-gray-600">Jenis Lapangan</p>
-                                  <p className="font-bold text-lg text-[#013064]">{booking.venue_type}</p>
-                                </div>
-                              </div>
-
-                              {/* TAMBAHAN: BILL NUMBER & PAYMENT METHOD */}
-                              {booking.bill_no && (
-                                <div className="flex items-start gap-3">
-                                  <CreditCard className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
-                                  <div className="flex-1">
-                                    <p className="text-sm text-gray-600">No. Tagihan</p>
-                                    <p className="font-bold text-sm text-[#013064]">{booking.bill_no}</p>
+                                    {/* Payment Status Badge */}
+                                    {!isExpired && (
+                                      <>
+                                        {booking.is_paid ? (
+                                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Terbayar
+                                          </span>
+                                        ) : booking.payment_status === 'pending' ? (
+                                          <>
+                                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
+                                              <AlertCircle className="w-3 h-3" />
+                                              Belum Bayar
+                                            </span>
+                                            {/* ✅ Payment Timer */}
+                                            <PaymentTimer
+                                              createdAt={booking.created_at}
+                                              onExpired={() => handleBookingExpired(booking.id)}
+                                              onAlert={(message) => handlePaymentAlert(message)}
+                                            />
+                                          </>
+                                        ) : null}
+                                      </>
+                                    )}
                                   </div>
                                 </div>
-                              )}
-                              {booking.payment_method && (
+
+                                {/* Action Buttons */}
+                                {!isExpired && (
+                                  <div className="flex gap-2">
+                                    {booking.can_pay && (
+                                      <form
+                                        action={`/payment/process/${booking.id}`}
+                                        method="POST"
+                                        className="flex-1 md:flex-none"
+                                      >
+                                        <input type="hidden" name="_token" value={document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')} />
+                                        <button
+                                          type="submit"
+                                          className="w-full flex items-center justify-center gap-2 px-3 md:px-4 py-2 bg-[#ffd22f] text-[#013064] rounded hover:bg-[#ffe066] transition font-semibold text-sm"
+                                        >
+                                          <CreditCard className="w-4 h-4" />
+                                          <span>Bayar</span>
+                                        </button>
+                                      </form>
+                                    )}
+                                    {booking.can_cancel && (
+                                      <button
+                                        onClick={() => handleCancelBooking(booking)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                      >
+                                        <X className="w-4 h-4" />
+                                        <span className="text-sm font-semibold">Batalkan</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-3 mb-4">
                                 <div className="flex items-start gap-3">
-                                  <CreditCard className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
+                                  <Clock className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
                                   <div className="flex-1">
-                                    <p className="text-sm text-gray-600">Metode Pembayaran</p>
-                                    <p className="font-bold text-sm text-[#013064]">{booking.payment_method}</p>
+                                    <p className="text-sm text-gray-600">Jam Sewa</p>
+                                    <p className="font-bold text-lg text-[#013064]">{booking.time_slot}</p>
                                   </div>
                                 </div>
-                              )}
-                            </div>
 
-                            <div className="mt-4 pt-4 border-t flex justify-between items-center">
-                              <span className="text-gray-600 font-medium">Total Pembayaran</span>
-                              <span className="text-2xl font-bold text-[#013064]">
-                                Rp. {booking.total_price}
-                              </span>
+                                <div className="flex items-start gap-3">
+                                  <Calendar className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <p className="text-sm text-gray-600">Tanggal</p>
+                                    <p className="font-bold text-lg text-[#013064]">{booking.booking_date}</p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-start gap-3">
+                                  <MapPin className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <p className="text-sm text-gray-600">Jenis Lapangan</p>
+                                    <p className="font-bold text-lg text-[#013064]">{booking.venue_type}</p>
+                                  </div>
+                                </div>
+
+                                {booking.bill_no && (
+                                  <div className="flex items-start gap-3">
+                                    <CreditCard className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                      <p className="text-sm text-gray-600">No. Tagihan</p>
+                                      <p className="font-bold text-sm text-[#013064]">{booking.bill_no}</p>
+                                    </div>
+                                  </div>
+                                )}
+                                {booking.payment_method && (
+                                  <div className="flex items-start gap-3">
+                                    <CreditCard className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                      <p className="text-sm text-gray-600">Metode Pembayaran</p>
+                                      <p className="font-bold text-sm text-[#013064]">{booking.payment_method}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="mt-4 pt-4 border-t flex justify-between items-center">
+                                <span className="text-gray-600 font-medium">Total Pembayaran</span>
+                                <span className="text-2xl font-bold text-[#013064]">
+                                  Rp. {booking.total_price}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="bg-white/10 rounded-lg p-12 text-center">

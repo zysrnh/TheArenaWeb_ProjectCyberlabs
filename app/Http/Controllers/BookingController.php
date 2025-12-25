@@ -13,8 +13,49 @@ use Carbon\Carbon;
 
 class BookingController extends Controller
 {
+    /**
+     * ✅ Auto-cancel expired pending bookings (dipanggil di setiap request penting)
+     */
+    private function cancelExpiredPendingBookings()
+    {
+        try {
+            $expirationTime = Carbon::now()->subMinutes(10);
+
+            $expiredBookings = Booking::where('payment_status', 'pending')
+                ->where('status', 'pending')
+                ->where('created_at', '<', $expirationTime)
+                ->get();
+
+            foreach ($expiredBookings as $booking) {
+                DB::beginTransaction();
+                try {
+                    $booking->update([
+                        'status' => 'cancelled',
+                        'payment_status' => 'cancelled'
+                    ]);
+
+                    // Hapus BookedTimeSlot yang terkait
+                    BookedTimeSlot::where('booking_id', $booking->id)->delete();
+
+                    DB::commit();
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    \Log::error('Failed to cancel expired booking: ' . $e->getMessage());
+                }
+            }
+
+            return $expiredBookings->count();
+        } catch (\Exception $e) {
+            \Log::error('Error in cancelExpiredPendingBookings: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
     public function index(Request $request)
     {
+        // ✅ Jalankan auto-cancel sebelum render halaman
+        $this->cancelExpiredPendingBookings();
+
         $weekOffset = $request->get('week', 0);
         $selectedVenueType = $request->get('venue', 'pvj');
 
@@ -217,7 +258,7 @@ class BookingController extends Controller
     }
 
     /**
-     * ✅ UPDATED: Calculate dynamic price based on venue, date, and time
+     * ✅ Calculate dynamic price based on venue, date, and time
      */
     private function calculatePrice($venueType, $date, $timeSlot)
     {
@@ -311,10 +352,13 @@ class BookingController extends Controller
     }
 
     /**
-     * ✅ UPDATED: Dynamic pricing in time slots
+     * ✅ UPDATED: Hanya slot yang SUDAH BAYAR yang dianggap booked
      */
     public function getTimeSlots(Request $request)
     {
+        // ✅ Auto-cancel expired bookings sebelum cek slot
+        $this->cancelExpiredPendingBookings();
+
         $date = $request->input('date');
         $venueType = $request->input('venue_type', 'pvj');
 
@@ -330,19 +374,27 @@ class BookingController extends Controller
             ['time' => '22.00 - 00.00', 'duration' => 120],
         ];
 
-        // ✅ Ambil slot yang sudah booked dari BookedTimeSlot
+        // ✅ PERBAIKAN: Hanya hitung slot yang payment_status = 'paid' ATAU status = 'confirmed'
         $bookedFromTimeSlots = BookedTimeSlot::where('date', $date)
             ->where('venue_type', $venueType)
             ->whereHas('booking', function ($query) {
-                $query->whereIn('status', ['pending', 'confirmed']);
+                // ✅ HANYA yang sudah bayar ATAU confirmed yang dianggap booked
+                $query->where(function ($q) {
+                    $q->where('payment_status', 'paid')
+                        ->orWhere('status', 'confirmed');
+                });
             })
             ->pluck('time_slot')
             ->toArray();
 
-        // ✅ PENTING: Ambil juga dari tabel Bookings langsung (untuk recurring booking)
+        // ✅ PERBAIKAN: Sama untuk booking langsung
         $bookedFromBookings = Booking::where('booking_date', $date)
             ->where('venue_type', $venueType)
-            ->whereIn('status', ['pending', 'confirmed'])
+            ->where(function ($query) {
+                // ✅ HANYA yang sudah bayar ATAU confirmed
+                $query->where('payment_status', 'paid')
+                    ->orWhere('status', 'confirmed');
+            })
             ->get()
             ->flatMap(function ($booking) {
                 return collect($booking->time_slots)->pluck('time');
@@ -367,7 +419,7 @@ class BookingController extends Controller
     }
 
     /**
-     * ✅ UPDATED: Validate price with dynamic calculation
+     * ✅ UPDATED: Validate price + Cek konflik hanya dengan booking yang sudah terbayar
      */
     public function processBooking(Request $request)
     {
@@ -394,6 +446,9 @@ class BookingController extends Controller
         }
 
         try {
+            // ✅ Auto-cancel expired bookings sebelum proses
+            $this->cancelExpiredPendingBookings();
+
             DB::beginTransaction();
 
             // ✅ Validate prices from client match server calculation
@@ -415,12 +470,16 @@ class BookingController extends Controller
 
             $requestedSlots = array_column($validated['time_slots'], 'time');
 
-            // ✅ Cek konflik dari BookedTimeSlot (customer booking + recurring booking)
+            // ✅ PERBAIKAN: Cek konflik HANYA dengan booking yang sudah terbayar atau confirmed
             $alreadyBooked = BookedTimeSlot::where('date', $validated['date'])
                 ->where('venue_type', $validated['venue_type'])
                 ->whereIn('time_slot', $requestedSlots)
                 ->whereHas('booking', function ($query) {
-                    $query->whereIn('status', ['pending', 'confirmed']);
+                    // ✅ HANYA yang sudah bayar ATAU confirmed
+                    $query->where(function ($q) {
+                        $q->where('payment_status', 'paid')
+                            ->orWhere('status', 'confirmed');
+                    });
                 })
                 ->exists();
 
@@ -466,7 +525,7 @@ class BookingController extends Controller
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Booking berhasil! Silakan lanjutkan ke pembayaran.',
+                    'message' => 'Booking berhasil! Silakan lanjutkan ke pembayaran dalam 30 menit.',
                     'booking_id' => $booking->id,
                     'redirect_to_profile' => true,
                 ]);
@@ -475,7 +534,7 @@ class BookingController extends Controller
             return back()->with([
                 'flash' => [
                     'success' => true,
-                    'message' => 'Booking berhasil! Silakan lanjutkan ke pembayaran.',
+                    'message' => 'Booking berhasil! Silakan lanjutkan ke pembayaran dalam 30 menit.',
                     'booking_id' => $booking->id,
                 ]
             ]);
@@ -513,7 +572,7 @@ class BookingController extends Controller
 
         try {
             $completedBookingWithoutReview = Booking::where('client_id', Auth::guard('client')->id())
-                ->completedWithoutReview()  // ✅ GANTI 3 baris where jadi 1 baris scope ini
+                ->completedWithoutReview()
                 ->oldest('booking_date')
                 ->first();
 
@@ -581,7 +640,6 @@ class BookingController extends Controller
                     'created_at' => $review->created_at->diffForHumans(),
                 ];
             });
-
         return response()->json([
             'success' => true,
             'reviews' => $reviews

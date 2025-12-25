@@ -1076,9 +1076,9 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
               <CheckCircle className="w-12 h-12 text-[#013064]" />
             </div>
 
-            <h3 className="text-3xl font-bold text-[#013064] mb-3">Booking Berhasil!</h3>
+            <h3 className="text-3xl font-bold text-[#013064] mb-3">Booking Dalam Prosess</h3>
             <p className="text-gray-600 mb-6">
-              Pesanan Anda telah berhasil diproses. Silakan cek email Anda untuk detail booking.
+              Lakukan Pembayaran di history booking untuk menyelesaikan proses booking Anda.
             </p>
 
             <div className="bg-[#013064]/5 rounded-lg p-4 mb-6 text-left">
@@ -1103,7 +1103,7 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
               onClick={handleSuccessClose}
               className="w-full py-3 bg-[#ffd22f] text-[#013064] rounded-lg font-bold hover:bg-[#ffe066] transition"
             >
-              Kembali ke Beranda
+              Menuju Jadwal Booking Anda
             </button>
           </div>
         </div>
