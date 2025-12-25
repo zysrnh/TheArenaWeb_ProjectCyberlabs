@@ -345,6 +345,9 @@ class ProfileController extends Controller
     /**
      * Update profile client
      */
+    /**
+     * Update profile client
+     */
     public function update(Request $request)
     {
         $client = Auth::guard('client')->user();
@@ -353,32 +356,51 @@ class ProfileController extends Controller
             return redirect()->route('login')->withErrors(['error' => 'Silakan login terlebih dahulu']);
         }
 
+        // ✅ VALIDASI LENGKAP dengan email
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:clients,email,' . $client->id,
-            'phone' => 'required|string|max:20',
+            'email' => 'required|email|max:255|unique:clients,email,' . $client->id, // ✅ TETAP ADA, tapi unique kecuali email sendiri
+            'phone' => 'nullable|string|max:20',
             'province' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:255',
             'address' => 'nullable|string',
             'gender' => 'nullable|string|in:Laki-laki,Perempuan',
             'birth_date' => 'nullable|date',
-            'profile_image' => 'nullable|image|max:2048',
+            'profile_image' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048', // ✅ Tambah mimes
         ]);
 
+        // ✅ HANDLE IMAGE UPLOAD
         if ($request->hasFile('profile_image')) {
-            if ($client->profile_image) {
+            Log::info('📷 Uploading profile image', [
+                'client_id' => $client->id,
+                'file_name' => $request->file('profile_image')->getClientOriginalName(),
+                'file_size' => $request->file('profile_image')->getSize(),
+            ]);
+
+            // Hapus gambar lama kalau ada
+            if ($client->profile_image && Storage::disk('public')->exists($client->profile_image)) {
                 Storage::disk('public')->delete($client->profile_image);
+                Log::info('🗑️ Old image deleted', ['old_path' => $client->profile_image]);
             }
 
+            // Upload gambar baru
             $path = $request->file('profile_image')->store('profile-images', 'public');
             $validated['profile_image'] = $path;
+
+            Log::info('✅ New image uploaded', ['new_path' => $path]);
         }
 
+        // ✅ UPDATE CLIENT
         $client->update($validated);
+
+        Log::info('✅ Profile updated successfully', [
+            'client_id' => $client->id,
+            'has_new_image' => isset($validated['profile_image']),
+            'email_changed' => $client->email !== $request->email,
+        ]);
 
         return back()->with('success', 'Profil berhasil diperbarui!');
     }
-
     /**
      * Cancel booking
      */

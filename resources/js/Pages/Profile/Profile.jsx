@@ -30,19 +30,19 @@ function PaymentTimer({ createdAt, onExpired, onAlert }) {
       const minutes = Math.floor(diff / 60000);
       const seconds = Math.floor((diff % 60000) / 1000);
       const totalSeconds = Math.floor(diff / 1000);
-      
+
       // Alert notifications dengan type checking
       if (onAlert && typeof onAlert === 'function') {
         if (totalSeconds <= 300 && !alertShownRef.current.fiveMin) {
           alertShownRef.current.fiveMin = true;
           onAlert('⚠️ Sisa 5 menit lagi! Segera selesaikan pembayaran Anda.');
         }
-        
+
         if (totalSeconds <= 120 && !alertShownRef.current.twoMin) {
           alertShownRef.current.twoMin = true;
           onAlert('🚨 Sisa 2 menit lagi! Booking akan otomatis dibatalkan jika belum dibayar.');
         }
-        
+
         if (totalSeconds <= 60 && !alertShownRef.current.oneMin) {
           alertShownRef.current.oneMin = true;
           onAlert('🔴 SISA 1 MENIT! Segera lakukan pembayaran sekarang!');
@@ -66,9 +66,8 @@ function PaymentTimer({ createdAt, onExpired, onAlert }) {
   const isUrgent = timeLeft.total < 3 * 60 * 1000;
 
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold ${
-      isUrgent ? 'bg-red-100 text-red-800 animate-pulse' : 'bg-orange-100 text-orange-800'
-    }`}>
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold ${isUrgent ? 'bg-red-100 text-red-800 animate-pulse' : 'bg-orange-100 text-orange-800'
+      }`}>
       <Clock className="w-3 h-3" />
       <span>
         Bayar dalam: {timeLeft.minutes}:{String(timeLeft.seconds).padStart(2, '0')}
@@ -105,6 +104,7 @@ export default function Profile() {
 
   const { data, setData, post, processing, errors } = useForm({
     name: auth.client?.name || "",
+    email: auth.client?.email || "",  // ✅ TAMBAH INI
     province: auth.client?.province || "",
     city: auth.client?.city || "",
     address: auth.client?.address || "",
@@ -162,13 +162,35 @@ export default function Profile() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // ✅ DEBUGGING
+    console.log('📤 Data yang dikirim:', {
+      name: data.name,
+      email: data.email,
+      has_image: !!data.profile_image,
+      image_name: data.profile_image?.name,
+    });
+
     post('/profile/update', {
       forceFormData: true,
       onSuccess: () => {
+        console.log('✅ Update berhasil');
         setNotificationMessage('Profil berhasil diperbarui!');
         setNotificationType('success');
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 3000);
+
+        // ✅ Reset preview image
+        setSelectedImage(null);
+        setPreviewImage(null);
+        setImageFileName("No file chosen");
+      },
+      onError: (errors) => {
+        console.error('❌ Update gagal:', errors);
+        setNotificationMessage('Gagal memperbarui profil: ' + Object.values(errors).join(', '));
+        setNotificationType('error');
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 5000);
       }
     });
   };
@@ -419,6 +441,7 @@ export default function Profile() {
 
                     {/* Form Fields */}
                     <div className="space-y-5">
+                      {/* NAMA */}
                       <div>
                         <label className="block text-[#ffd22f] text-sm font-medium mb-2">
                           Nama
@@ -434,6 +457,24 @@ export default function Profile() {
                         )}
                       </div>
 
+                      {/* EMAIL */}
+                      <div>
+                        <label className="block text-[#ffd22f] text-sm font-medium mb-2">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={data.email}
+                          onChange={(e) => setData('email', e.target.value)}
+                          className="w-full px-4 py-3 bg-white/95 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ffd22f]"
+                          placeholder="email@example.com"
+                        />
+                        {errors.email && (
+                          <p className="text-red-400 text-xs mt-1">{errors.email}</p>
+                        )}
+                      </div>
+
+                      {/* PROVINSI & KOTA */}
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-[#ffd22f] text-sm font-medium mb-2">
@@ -468,6 +509,7 @@ export default function Profile() {
                         </div>
                       </div>
 
+                      {/* ALAMAT */}
                       <div>
                         <label className="block text-[#ffd22f] text-sm font-medium mb-2">
                           Alamat
@@ -481,6 +523,7 @@ export default function Profile() {
                         />
                       </div>
 
+                      {/* TELEPON & JENIS KELAMIN */}
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-[#ffd22f] text-sm font-medium mb-2">
@@ -510,6 +553,7 @@ export default function Profile() {
                         </div>
                       </div>
 
+                      {/* TANGGAL LAHIR */}
                       <div className="max-w-md">
                         <label className="block text-[#ffd22f] text-sm font-medium mb-2">
                           Tanggal Lahir
