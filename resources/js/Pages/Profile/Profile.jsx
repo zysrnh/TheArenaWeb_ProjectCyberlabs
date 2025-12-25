@@ -4,7 +4,6 @@ import { Phone, Mail, Calendar, User, MapPin, LogOut, Video, Clock, X, CreditCar
 
 import Navigation from "../../Components/Navigation";
 import Footer from "../../Components/Footer";
-import ReviewReminderModal from "../../Components/ReviewReminderModal";
 
 export default function Profile() {
   const { auth, upcomingBookings = [], historyBookings = {}, reviewHistory = [], flash,
@@ -29,6 +28,7 @@ export default function Profile() {
       authClient: auth.client?.id
     });
   }, [shouldShowReviewReminder, completedBookingCount]);
+  
 
   const { data, setData, post, processing, errors } = useForm({
     name: auth.client?.name || "",
@@ -57,6 +57,20 @@ export default function Profile() {
       setTimeout(() => setShowNotification(false), 3000);
     }
   }, [flash]);
+
+  // Notifikasi review reminder
+useEffect(() => {
+  if (shouldShowReviewReminder && completedBookingCount > 0) {
+    setNotificationMessage(
+      `Anda memiliki ${completedBookingCount} booking yang sudah selesai. Yuk, bagikan pengalaman Anda!`
+    );
+    setNotificationType('info');
+    setShowNotification(true);
+    
+    // Auto hide setelah 5 detik (lebih lama dari notif biasa)
+    setTimeout(() => setShowNotification(false), 5000);
+  }
+}, [shouldShowReviewReminder, completedBookingCount]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -149,14 +163,39 @@ export default function Profile() {
           animation: slide-in 0.3s ease-out;
         }
       `}</style>
-
-      {/* Notification Toast */}
-      {showNotification && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg ${notificationType === 'success' ? 'bg-green-500' : 'bg-red-500'
-          } text-white font-semibold animate-slide-in`}>
-          {notificationMessage}
-        </div>
+{/* Notification Toast */}
+{showNotification && (
+  <div 
+    className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg ${
+      notificationType === 'success' 
+        ? 'bg-green-500' 
+        : notificationType === 'error'
+        ? 'bg-red-500'
+        : 'bg-blue-500'  // ✅ TAMBAH untuk type 'info'
+    } text-white font-semibold animate-slide-in flex items-start gap-3 max-w-md`}
+  >
+    <div className="flex-1">
+      {notificationMessage}
+      {notificationType === 'info' && (
+        <button
+          onClick={() => {
+            setActiveTab('history-ulasan');
+            setShowNotification(false);
+          }}
+          className="block mt-2 text-sm underline hover:text-white/90 transition"
+        >
+          Buka History Ulasan →
+        </button>
       )}
+    </div>
+    <button
+      onClick={() => setShowNotification(false)}
+      className="text-white/80 hover:text-white transition flex-shrink-0"
+    >
+      <X className="w-5 h-5" />
+    </button>
+  </div>
+)}
 
       <div className="min-h-screen flex flex-col bg-[#013064]">
         <Navigation activePage="profile" />
@@ -507,7 +546,7 @@ export default function Profile() {
                     )}
                   </div>
                 )}
-                
+
                 {activeTab === 'history' && (
                   <div>
                     <div className="mb-6">
@@ -581,126 +620,126 @@ export default function Profile() {
                   </div>
                 )}
                 {activeTab === 'history-ulasan' && (
-                          <div>
-                            <div className="mb-6">
-                              <h3 className="text-[#ffd22f] text-2xl font-bold mb-2">History Ulasan Anda</h3>
-                              <p className="text-white/70">Riwayat ulasan yang telah Anda berikan</p>
-                            </div>
+                  <div>
+                    <div className="mb-6">
+                      <h3 className="text-[#ffd22f] text-2xl font-bold mb-2">History Ulasan Anda</h3>
+                      <p className="text-white/70">Riwayat ulasan yang telah Anda berikan</p>
+                    </div>
 
-                            {reviewHistory && reviewHistory.length > 0 ? (
-                              <div className="space-y-4">
-                                {reviewHistory.map((review, index) => (
-                                  <div key={review.id} className="bg-white rounded-lg p-6">
-                                    <div className="flex justify-between items-start mb-4">
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                          <span className="text-2xl font-bold text-[#013064]">
-                                            {index + 1}.
-                                          </span>
-                                          <div className="flex items-center gap-2">
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                              <Star
-                                                key={star}
-                                                className={`w-5 h-5 ${star <= review.average_rating
-                                                    ? 'fill-[#ffd22f] text-[#ffd22f]'
-                                                    : 'text-gray-300'
-                                                  }`}
-                                              />
-                                            ))}
-                                            <span className="text-lg font-bold text-[#013064] ml-2">
-                                              {review.average_rating}/5
-                                            </span>
-                                          </div>
-                                        </div>
-                                        <p className="text-sm text-gray-500">
-                                          {review.created_at}
-                                        </p>
-                                      </div>
-
-                                      {review.is_approved ? (
-                                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                                          <CheckCircle className="w-3 h-3" />
-                                          Disetujui
-                                        </span>
-                                      ) : (
-                                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
-                                          <AlertCircle className="w-3 h-3" />
-                                          Menunggu Persetujuan
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    <div className="space-y-3 mb-4">
-                                      <div className="grid grid-cols-3 gap-4">
-                                        <div className="text-center p-3 bg-gray-50 rounded">
-                                          <p className="text-xs text-gray-600 mb-1">Fasilitas</p>
-                                          <div className="flex items-center justify-center gap-1">
-                                            <Star className="w-4 h-4 fill-[#ffd22f] text-[#ffd22f]" />
-                                            <span className="font-bold text-[#013064]">
-                                              {review.rating_facilities}
-                                            </span>
-                                          </div>
-                                        </div>
-                                        <div className="text-center p-3 bg-gray-50 rounded">
-                                          <p className="text-xs text-gray-600 mb-1">Keramahan</p>
-                                          <div className="flex items-center justify-center gap-1">
-                                            <Star className="w-4 h-4 fill-[#ffd22f] text-[#ffd22f]" />
-                                            <span className="font-bold text-[#013064]">
-                                              {review.rating_hospitality}
-                                            </span>
-                                          </div>
-                                        </div>
-                                        <div className="text-center p-3 bg-gray-50 rounded">
-                                          <p className="text-xs text-gray-600 mb-1">Kebersihan</p>
-                                          <div className="flex items-center justify-center gap-1">
-                                            <Star className="w-4 h-4 fill-[#ffd22f] text-[#ffd22f]" />
-                                            <span className="font-bold text-[#013064]">
-                                              {review.rating_cleanliness}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {review.comment && (
-                                        <div className="flex items-start gap-3 mt-4 p-4 bg-gray-50 rounded">
-                                          <MessageSquare className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
-                                          <div className="flex-1">
-                                            <p className="text-sm text-gray-600 mb-1 font-semibold">Komentar</p>
-                                            <p className="text-gray-800">{review.comment}</p>
-                                          </div>
-                                        </div>
-                                      )}
-
-                                      {review.booking_info && (
-                                        <div className="mt-3 pt-3 border-t">
-                                          <p className="text-xs text-gray-500 mb-2">Untuk Booking:</p>
-                                          <div className="flex items-center gap-4 text-sm">
-                                            <span className="text-gray-700">
-                                              <Calendar className="w-4 h-4 inline mr-1" />
-                                              {review.booking_info.date}
-                                            </span>
-                                            <span className="text-gray-700">
-                                              <MapPin className="w-4 h-4 inline mr-1" />
-                                              {review.booking_info.venue}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
+                    {reviewHistory && reviewHistory.length > 0 ? (
+                      <div className="space-y-4">
+                        {reviewHistory.map((review, index) => (
+                          <div key={review.id} className="bg-white rounded-lg p-6">
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <span className="text-2xl font-bold text-[#013064]">
+                                    {index + 1}.
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Star
+                                        key={star}
+                                        className={`w-5 h-5 ${star <= review.average_rating
+                                          ? 'fill-[#ffd22f] text-[#ffd22f]'
+                                          : 'text-gray-300'
+                                          }`}
+                                      />
+                                    ))}
+                                    <span className="text-lg font-bold text-[#013064] ml-2">
+                                      {review.average_rating}/5
+                                    </span>
                                   </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="bg-white/10 rounded-lg p-12 text-center">
-                                <Star className="w-16 h-16 text-white/30 mx-auto mb-4" />
-                                <p className="text-white text-lg mb-2">Belum ada ulasan yang diberikan</p>
-                                <p className="text-white/70 text-sm">
-                                  Selesaikan booking dan berikan ulasan pengalaman Anda!
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                  {review.created_at}
                                 </p>
                               </div>
-                            )}
+
+                              {review.is_approved ? (
+                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                                  <CheckCircle className="w-3 h-3" />
+                                  Disetujui
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
+                                  <AlertCircle className="w-3 h-3" />
+                                  Menunggu Persetujuan
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="space-y-3 mb-4">
+                              <div className="grid grid-cols-3 gap-4">
+                                <div className="text-center p-3 bg-gray-50 rounded">
+                                  <p className="text-xs text-gray-600 mb-1">Fasilitas</p>
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Star className="w-4 h-4 fill-[#ffd22f] text-[#ffd22f]" />
+                                    <span className="font-bold text-[#013064]">
+                                      {review.rating_facilities}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-center p-3 bg-gray-50 rounded">
+                                  <p className="text-xs text-gray-600 mb-1">Keramahan</p>
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Star className="w-4 h-4 fill-[#ffd22f] text-[#ffd22f]" />
+                                    <span className="font-bold text-[#013064]">
+                                      {review.rating_hospitality}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-center p-3 bg-gray-50 rounded">
+                                  <p className="text-xs text-gray-600 mb-1">Kebersihan</p>
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Star className="w-4 h-4 fill-[#ffd22f] text-[#ffd22f]" />
+                                    <span className="font-bold text-[#013064]">
+                                      {review.rating_cleanliness}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {review.comment && (
+                                <div className="flex items-start gap-3 mt-4 p-4 bg-gray-50 rounded">
+                                  <MessageSquare className="w-5 h-5 text-[#ffd22f] flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <p className="text-sm text-gray-600 mb-1 font-semibold">Komentar</p>
+                                    <p className="text-gray-800">{review.comment}</p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {review.booking_info && (
+                                <div className="mt-3 pt-3 border-t">
+                                  <p className="text-xs text-gray-500 mb-2">Untuk Booking:</p>
+                                  <div className="flex items-center gap-4 text-sm">
+                                    <span className="text-gray-700">
+                                      <Calendar className="w-4 h-4 inline mr-1" />
+                                      {review.booking_info.date}
+                                    </span>
+                                    <span className="text-gray-700">
+                                      <MapPin className="w-4 h-4 inline mr-1" />
+                                      {review.booking_info.venue}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-white/10 rounded-lg p-12 text-center">
+                        <Star className="w-16 h-16 text-white/30 mx-auto mb-4" />
+                        <p className="text-white text-lg mb-2">Belum ada ulasan yang diberikan</p>
+                        <p className="text-white/70 text-sm">
+                          Selesaikan booking dan berikan ulasan pengalaman Anda!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
               </div>
             </div>
@@ -760,12 +799,6 @@ export default function Profile() {
           </div>
         </div>
       )}
-
-      {/* Review Reminder Modal */}
-      <ReviewReminderModal
-        shouldShow={shouldShowReviewReminder}
-        completedBookingCount={completedBookingCount}
-      />
     </>
   );
 }
