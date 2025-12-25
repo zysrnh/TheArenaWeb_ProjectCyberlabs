@@ -86,7 +86,7 @@ export default function Contact() {
                     <Phone className="w-5 h-5 text-[#013064]" />
                   </div>
                   <div>
-                    <p className="text-white text-base">+62 0812-3456-789</p>
+                    <p className="text-white text-base">+62 812-2297-7985</p>
                   </div>
                 </div>
 
@@ -105,7 +105,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-white text-base">
-                      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
+                      The Arena Urban – Jl. Kelenteng No. 41, Ciroyom, Andir, Kota Bandung
                     </p>
                   </div>
                 </div>

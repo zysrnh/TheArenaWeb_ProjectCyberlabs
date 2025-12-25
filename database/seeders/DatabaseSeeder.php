@@ -22,30 +22,30 @@ class DatabaseSeeder extends Seeder
 
         // Buat Super Admin
         $admin = User::firstOrCreate(
-            ['email' => 'super-admin@alcomedia.id'],
+            ['email' => 'super-admin@thearena.id'],
             [
                 'name' => 'Super Admin',
-                'password' => bcrypt('4Lc0@dm1nistrat0r0917'),
+                'password' => bcrypt('TH34REN4F1B4!'),
             ]
         );
         $admin->assignRole('super_admin');
         
         // Buat Web Admin
         $webAdmin = User::firstOrCreate(
-            ['email' => 'web-admin@alcomedia.id'],
+            ['email' => 'web-admin@thearena.id'],
             [
                 'name' => 'Web Admin',
-                'password' => bcrypt('40wLCpD9dc'),
+                'password' => bcrypt('TH34REN4W3B!'),
             ]
         );
         $webAdmin->assignRole('web_admin');
 
         // Buat Editor Admin
         $editorAdmin = User::firstOrCreate(
-            ['email' => 'editor-admin@alcomedia.id'],
+            ['email' => 'editor-admin@thearena.id'],
             [
                 'name' => 'Editor Admin',
-                'password' => bcrypt('9Ey6N4Axms'),
+                'password' => bcrypt('TH34REN4ED1T0R!'),
             ]
         );
         $editorAdmin->assignRole('admin_editor');
