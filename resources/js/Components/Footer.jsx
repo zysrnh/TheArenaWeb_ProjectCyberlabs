@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@inertiajs/react";
-import { Instagram, Music, Youtube, MessageCircle, ChevronDown, X } from "lucide-react";
+import { Instagram, Music, Youtube, MessageCircle, ChevronDown, X, Clock } from "lucide-react";
 
 export default function Footer() {
   const [showFaqModal, setShowFaqModal] = useState(false);
@@ -24,9 +24,9 @@ export default function Footer() {
       answer: "Ya, kami memiliki pelatih berpengalaman yang siap membantu meningkatkan skill basket Anda."
     },
     {
-      question: "Apakah The Arena buka setiap hari?",
-      answer: "Ya, The Arena buka setiap hari dari jam 06.00 hingga 22.00 WIB."
-    }
+  question: "Apakah The Arena buka setiap hari?",
+  answer: "Ya, The Arena buka setiap hari dari jam\n06.00 hingga 22.00 WIB."
+}
   ];
 
   const toggleFaq = (index) => {
@@ -99,8 +99,8 @@ export default function Footer() {
                   <span className="text-[#013064] text-sm text-left">The Arena Urban – Jl. Kelenteng No. 41, Ciroyom, Andir, Kota Bandung</span>
                 </div>
                 <div className="flex items-start gap-3 justify-center md:justify-start px-4 md:px-0">
-                  <img src="/images/Clock.svg" alt="Hours" className="w-5 h-5 mt-1 flex-shrink-0" />
-                  <span className="text-[#013064] text-sm text-left">Jam Operasional: Setiap hari, 06.00 – 22.00 WIB</span>
+                  <Clock className="w-5 h-5 mt-1 flex-shrink-0 text-[#013064]" />
+                  <span className="text-[#013064] text-sm text-left">Jam Operasional: Setiap hari, <br/>06.00 – 22.00 WIB</span>
                 </div>
                 
                 {/* Social Media Icons */}
