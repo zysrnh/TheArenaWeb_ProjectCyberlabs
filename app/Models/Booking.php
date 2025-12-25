@@ -114,36 +114,46 @@ class Booking extends Model
      */
     public function canBeReviewed()
     {
-        return $this->status === 'confirmed' 
+        return $this->status === 'completed'  // ✅ UBAH: dari 'confirmed' ke 'completed'
+            && $this->is_paid === true         // ✅ TAMBAH: harus sudah dibayar
             && $this->booking_date < now()->toDateString()
             && !$this->hasReview();
     }
-
+    /**
+     * ✅ Scope untuk query booking yang bisa direview
+     */
+    public function scopeCompletedWithoutReview($query)
+    {
+        return $query->where('status', 'completed')
+            ->where('is_paid', true)
+            ->where('booking_date', '<', now()->toDateString())
+            ->whereDoesntHave('review');
+    }
     /**
      * Get formatted time slots string
      */
     public function getTimeSlotsStringAttribute()
     {
         $slots = $this->time_slots;
-        
+
         if (!is_array($slots) || empty($slots)) {
             return '-';
         }
-        
+
         $times = [];
         foreach ($slots as $slot) {
             if (isset($slot['time'])) {
                 $times[] = $slot['time'];
             }
         }
-        
+
         if (empty($times)) {
             return '-';
         }
-        
+
         return implode(', ', $times);
     }
-    
+
     /**
      * Get time slot accessor
      */
@@ -153,7 +163,7 @@ class Booking extends Model
             if (is_array($value)) {
                 return $value;
             }
-            
+
             if (is_string($value)) {
                 $decoded = json_decode($value, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
@@ -162,7 +172,7 @@ class Booking extends Model
                 return $value;
             }
         }
-        
+
         $timeSlots = $this->attributes['time_slots'] ?? null;
         if ($timeSlots) {
             if (is_string($timeSlots)) {
@@ -175,45 +185,45 @@ class Booking extends Model
                 return $timeSlots[0] ?? null;
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * Get formatted time range
      */
     public function getTimeRangeAttribute()
     {
         $slots = $this->time_slots;
-        
+
         if (!is_array($slots) || empty($slots)) {
             return '-';
         }
-        
+
         $times = [];
         foreach ($slots as $slot) {
             if (isset($slot['time'])) {
                 $times[] = $slot['time'];
             }
         }
-        
+
         if (empty($times)) {
             return '-';
         }
-        
-        usort($times, function($a, $b) {
+
+        usort($times, function ($a, $b) {
             $aStart = explode(' - ', $a)[0];
             $bStart = explode(' - ', $b)[0];
             return strcmp($aStart, $bStart);
         });
-        
+
         if (count($times) === 1) {
             return $times[0];
         }
-        
+
         $firstStart = explode(' - ', $times[0])[0];
         $lastEnd = explode(' - ', $times[count($times) - 1])[1];
-        
+
         return $firstStart . ' - ' . $lastEnd;
     }
 
@@ -222,7 +232,7 @@ class Booking extends Model
      */
     public function getPaymentStatusColorAttribute()
     {
-        return match($this->payment_status) {
+        return match ($this->payment_status) {
             'paid'      => 'green',
             'pending'   => 'yellow',
             'failed'    => 'red',
@@ -237,7 +247,7 @@ class Booking extends Model
      */
     public function getPaymentStatusLabelAttribute()
     {
-        return match($this->payment_status) {
+        return match ($this->payment_status) {
             'paid'      => 'Lunas',
             'pending'   => 'Menunggu Pembayaran',
             'failed'    => 'Gagal',

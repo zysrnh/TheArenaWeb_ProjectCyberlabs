@@ -116,6 +116,7 @@ export default function HomePage() {
 
       setLastScrollY(currentScrollY);
     };
+    
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);

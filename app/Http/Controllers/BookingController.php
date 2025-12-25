@@ -399,11 +399,11 @@ class BookingController extends Controller
             // ✅ Validate prices from client match server calculation
             foreach ($validated['time_slots'] as $slot) {
                 $expectedPrice = $this->calculatePrice(
-                    $validated['venue_type'], 
-                    $validated['date'], 
+                    $validated['venue_type'],
+                    $validated['date'],
                     $slot['time']
                 );
-                
+
                 if ($slot['price'] != $expectedPrice) {
                     DB::rollBack();
                     return response()->json([
@@ -513,8 +513,7 @@ class BookingController extends Controller
 
         try {
             $completedBookingWithoutReview = Booking::where('client_id', Auth::guard('client')->id())
-                ->where('status', 'completed')
-                ->whereDoesntHave('review')
+                ->completedWithoutReview()  // ✅ GANTI 3 baris where jadi 1 baris scope ini
                 ->oldest('booking_date')
                 ->first();
 

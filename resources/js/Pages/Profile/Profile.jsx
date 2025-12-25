@@ -58,7 +58,9 @@ export default function Profile() {
     }
   }, [flash]);
 
-  // Notifikasi review reminder
+// ✅ CARI DAN GANTI useEffect REVIEW REMINDER DI Profile.jsx (sekitar baris 58-71)
+
+// ❌ HAPUS YANG INI:
 useEffect(() => {
   if (shouldShowReviewReminder && completedBookingCount > 0) {
     setNotificationMessage(
@@ -67,8 +69,20 @@ useEffect(() => {
     setNotificationType('info');
     setShowNotification(true);
     
-    // Auto hide setelah 5 detik (lebih lama dari notif biasa)
     setTimeout(() => setShowNotification(false), 5000);
+  }
+}, [shouldShowReviewReminder, completedBookingCount]);
+useEffect(() => {
+  if (shouldShowReviewReminder && completedBookingCount > 0) {
+    setNotificationMessage(
+      `Anda belum menambahkan ulasan untuk ${completedBookingCount} booking sebelumnya`
+    );
+    setNotificationType('error');
+    setShowNotification(true);
+    
+    setTimeout(() => {
+      router.visit("/#ulasan");
+    }, 1500);
   }
 }, [shouldShowReviewReminder, completedBookingCount]);
 
@@ -162,38 +176,76 @@ useEffect(() => {
         .animate-slide-in {
           animation: slide-in 0.3s ease-out;
         }
+          @keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
       `}</style>
-{/* Notification Toast */}
+{/* Notification Toast - HARUS ADA INI! */}
 {showNotification && (
-  <div 
-    className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg ${
-      notificationType === 'success' 
-        ? 'bg-green-500' 
-        : notificationType === 'error'
-        ? 'bg-red-500'
-        : 'bg-blue-500'  // ✅ TAMBAH untuk type 'info'
-    } text-white font-semibold animate-slide-in flex items-start gap-3 max-w-md`}
-  >
-    <div className="flex-1">
-      {notificationMessage}
-      {notificationType === 'info' && (
-        <button
-          onClick={() => {
-            setActiveTab('history-ulasan');
-            setShowNotification(false);
-          }}
-          className="block mt-2 text-sm underline hover:text-white/90 transition"
-        >
-          Buka History Ulasan →
-        </button>
-      )}
-    </div>
-    <button
+  <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
+    {/* Backdrop */}
+    <div
+      className="absolute inset-0 bg-[#013064]/80 backdrop-blur-sm"
       onClick={() => setShowNotification(false)}
-      className="text-white/80 hover:text-white transition flex-shrink-0"
-    >
-      <X className="w-5 h-5" />
-    </button>
+    />
+
+    {/* Popup */}
+    <div className="relative bg-white max-w-md w-full animate-slide-in shadow-2xl">
+      <div className="border-t-4 border-red-500">
+        {/* Header */}
+        <div className="bg-[#013064] px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-red-500" />
+            <h3 className="font-bold text-white text-lg">
+              Perhatian
+            </h3>
+          </div>
+          <button
+            onClick={() => setShowNotification(false)}
+            className="text-white/70 hover:text-white transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 bg-white">
+          <p className="text-[#013064] text-base leading-relaxed">
+            {notificationMessage}
+          </p>
+        </div>
+
+        {/* Progress Bar - 1.5 detik */}
+        <div className="h-1 bg-gray-200 overflow-hidden">
+          <div 
+            className="h-full bg-red-500" 
+            style={{
+              animation: 'progress 1.5s linear'
+            }}
+          />
+        </div>
+      </div>
+    </div>
   </div>
 )}
 

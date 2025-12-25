@@ -13,111 +13,107 @@ use App\Models\Review;
 
 class ProfileController extends Controller
 {
-   public function index()
-{
-    $client = Auth::guard('client')->user();
-    
-    // Ambil semua booking (upcoming & history) dalam satu query
-    $allBookings = Booking::where('client_id', $client->id)
-        ->with(['bookedTimeSlots'])
-        ->orderBy('booking_date', 'desc')
-        ->orderBy('created_at', 'desc')
-        ->get();
+    public function index()
+    {
+        $client = Auth::guard('client')->user();
 
-    // Pisahkan upcoming dan history
-    $upcomingBookingsRaw = $allBookings->filter(function($booking) {
-        return in_array($booking->status, ['pending', 'confirmed']) 
-            && $booking->booking_date >= Carbon::today();
-    })->sortBy('booking_date')->sortBy('created_at');
+        // Ambil semua booking (upcoming & history) dalam satu query
+        $allBookings = Booking::where('client_id', $client->id)
+            ->with(['bookedTimeSlots'])
+            ->orderBy('booking_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-    $historyBookingsRaw = $allBookings->filter(function($booking) {
-        return $booking->booking_date < Carbon::today() 
-            || in_array($booking->status, ['completed', 'cancelled']);
-    });
+        // Pisahkan upcoming dan history
+        $upcomingBookingsRaw = $allBookings->filter(function ($booking) {
+            return in_array($booking->status, ['pending', 'confirmed'])
+                && $booking->booking_date >= Carbon::today();
+        })->sortBy('booking_date')->sortBy('created_at');
 
-    // Format upcoming bookings
-    $upcomingBookings = $upcomingBookingsRaw->map(function($booking) {
-        return $this->formatBooking($booking, true);
-    })->values();
-
-    // Format history bookings
-    $historyBookingsFormatted = $historyBookingsRaw->map(function($booking) {
-        return $this->formatBooking($booking, false);
-    })->values();
-
-    // Manual pagination for history
-    $perPage = 10;
-    $currentPage = request()->get('page', 1);
-    $historyBookings = new \Illuminate\Pagination\LengthAwarePaginator(
-        $historyBookingsFormatted->forPage($currentPage, $perPage),
-        $historyBookingsFormatted->count(),
-        $perPage,
-        $currentPage,
-        ['path' => request()->url(), 'query' => request()->query()]
-    );
-
-    // ✅ CEK APAKAH USER PERLU DIMINTA REVIEW
-    $hasCompletedBooking = Booking::where('client_id', $client->id)
-        ->whereIn('status', ['confirmed', 'completed'])
-        ->where('booking_date', '<', Carbon::today())
-        ->where('payment_status', 'paid')
-        ->exists();
-
-    $hasGivenReview = Review::where('client_id', $client->id)->exists();
-
-    $shouldShowReviewReminder = $hasCompletedBooking && !$hasGivenReview;
-
-    $completedBookingCount = Booking::where('client_id', $client->id)
-        ->whereIn('status', ['confirmed', 'completed'])
-        ->where('booking_date', '<', Carbon::today())
-        ->where('payment_status', 'paid')
-        ->count();
-    
-    // ✅ GET REVIEW HISTORY
-    $reviewHistory = Review::where('client_id', $client->id)
-        ->with(['booking'])
-        ->orderBy('created_at', 'desc')
-        ->get()
-        ->map(function($review) {
-            return [
-                'id' => $review->id,
-                'rating_facilities' => $review->rating_facilities,
-                'rating_hospitality' => $review->rating_hospitality,
-                'rating_cleanliness' => $review->rating_cleanliness,
-                'average_rating' => $review->average_rating,
-                'comment' => $review->comment,
-                'is_approved' => $review->is_approved,
-                'created_at' => $review->created_at->format('d F Y H:i'),
-                'booking_info' => $review->booking ? [
-                    'date' => $review->booking->booking_date->format('d F Y'),
-                    'venue' => $this->formatVenueType($review->booking->venue_type),
-                ] : null,
-            ];
+        $historyBookingsRaw = $allBookings->filter(function ($booking) {
+            return $booking->booking_date < Carbon::today()
+                || in_array($booking->status, ['completed', 'cancelled']);
         });
-    
-    Log::info('📊 Profile Page Loaded', [
-        'client_id' => $client->id,
-        'upcoming_count' => $upcomingBookings->count(),
-        'history_count' => $historyBookingsFormatted->count(),
-        'review_count' => $reviewHistory->count(),
-        'has_completed_booking' => $hasCompletedBooking,
-        'has_given_review' => $hasGivenReview,
-        'should_show_review_reminder' => $shouldShowReviewReminder,
-        'completed_booking_count' => $completedBookingCount,
-    ]);
-    
-    return Inertia::render('Profile/Profile', [
-        'auth' => [
-            'client' => $client
-        ],
-        'upcomingBookings' => $upcomingBookings,
-        'historyBookings' => $historyBookings,
-        'reviewHistory' => $reviewHistory,
-        'flash' => session('flash'),
-        'shouldShowReviewReminder' => $shouldShowReviewReminder,
-        'completedBookingCount' => $completedBookingCount,
-    ]);
-}
+
+        // Format upcoming bookings
+        $upcomingBookings = $upcomingBookingsRaw->map(function ($booking) {
+            return $this->formatBooking($booking, true);
+        })->values();
+
+        // Format history bookings
+        $historyBookingsFormatted = $historyBookingsRaw->map(function ($booking) {
+            return $this->formatBooking($booking, false);
+        })->values();
+
+        // Manual pagination for history
+        $perPage = 10;
+        $currentPage = request()->get('page', 1);
+        $historyBookings = new \Illuminate\Pagination\LengthAwarePaginator(
+            $historyBookingsFormatted->forPage($currentPage, $perPage),
+            $historyBookingsFormatted->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        // ✅ CEK APAKAH USER PERLU DIMINTA REVIEW
+        $hasCompletedBooking = Booking::where('client_id', $client->id)
+            ->whereIn('status', ['confirmed', 'completed'])
+            ->where('booking_date', '<', Carbon::today())
+            ->where('payment_status', 'paid')
+            ->exists();
+
+        $hasGivenReview = Review::where('client_id', $client->id)->exists();
+
+        $shouldShowReviewReminder = $hasCompletedBooking && !$hasGivenReview;
+        $completedBookingCount = Booking::where('client_id', Auth::guard('client')->id())
+            ->completedWithoutReview()  // ✅ GANTI semua where jadi 1 scope ini
+            ->count();
+        // ✅ GET REVIEW HISTORY
+        $reviewHistory = Review::where('client_id', $client->id)
+            ->with(['booking'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($review) {
+                return [
+                    'id' => $review->id,
+                    'rating_facilities' => $review->rating_facilities,
+                    'rating_hospitality' => $review->rating_hospitality,
+                    'rating_cleanliness' => $review->rating_cleanliness,
+                    'average_rating' => $review->average_rating,
+                    'comment' => $review->comment,
+                    'is_approved' => $review->is_approved,
+                    'created_at' => $review->created_at->format('d F Y H:i'),
+                    'booking_info' => $review->booking ? [
+                        'date' => $review->booking->booking_date->format('d F Y'),
+                        'venue' => $this->formatVenueType($review->booking->venue_type),
+                    ] : null,
+                ];
+            });
+
+        Log::info('📊 Profile Page Loaded', [
+            'client_id' => $client->id,
+            'upcoming_count' => $upcomingBookings->count(),
+            'history_count' => $historyBookingsFormatted->count(),
+            'review_count' => $reviewHistory->count(),
+            'has_completed_booking' => $hasCompletedBooking,
+            'has_given_review' => $hasGivenReview,
+            'should_show_review_reminder' => $shouldShowReviewReminder,
+            'completed_booking_count' => $completedBookingCount,
+        ]);
+
+        return Inertia::render('Profile/Profile', [
+            'auth' => [
+                'client' => $client
+            ],
+            'upcomingBookings' => $upcomingBookings,
+            'historyBookings' => $historyBookings,
+            'reviewHistory' => $reviewHistory,
+            'flash' => session('flash'),
+            'shouldShowReviewReminder' => $shouldShowReviewReminder,
+            'completedBookingCount' => $completedBookingCount,
+        ]);
+    }
 
     /**
      * Format booking data untuk frontend
@@ -133,33 +129,33 @@ class ProfileController extends Controller
                 }
             }
         }
-        
+
         // Urutkan slots
         if (!empty($allSlots)) {
-            usort($allSlots, function($a, $b) {
+            usort($allSlots, function ($a, $b) {
                 return $this->parseTime($a) <=> $this->parseTime($b);
             });
         }
-        
+
         $timeRange = $this->mergeTimeSlots($allSlots);
-        
+
         // ✅ Determine can_pay and can_cancel
         $isPaid = $booking->isPaid();
         $isPending = $booking->isPending();
         $isExpired = $booking->payment_status === 'expired';
         $isCancelled = $booking->status === 'cancelled';
-        
-        $canPay = $booking->status === 'pending' 
-               && !$isPaid 
-               && !$isExpired
-               && !$isCancelled
-               && $isUpcoming;
-               
-        $canCancel = in_array($booking->status, ['pending', 'confirmed']) 
-                  && !$isPaid 
-                  && !$isCancelled
-                  && $isUpcoming;
-        
+
+        $canPay = $booking->status === 'pending'
+            && !$isPaid
+            && !$isExpired
+            && !$isCancelled
+            && $isUpcoming;
+
+        $canCancel = in_array($booking->status, ['pending', 'confirmed'])
+            && !$isPaid
+            && !$isCancelled
+            && $isUpcoming;
+
         $formatted = [
             'id' => $booking->id,
             'booking_date' => $booking->booking_date->format('d F Y'),
@@ -173,7 +169,7 @@ class ProfileController extends Controller
             'status' => $booking->status,
             'status_label' => $this->getStatusLabel($booking->status),
             'status_color' => $this->getStatusColor($booking->status),
-            
+
             // ✅ PAYMENT INFO
             'payment_status' => $booking->payment_status ?? 'pending',
             'payment_status_label' => $this->getPaymentStatusLabel($booking->payment_status),
@@ -183,11 +179,11 @@ class ProfileController extends Controller
             'trx_id' => $booking->trx_id,
             'is_paid' => $isPaid,
             'is_pending' => $isPending,
-            
+
             // ✅ ACTION FLAGS
             'can_pay' => $canPay,
             'can_cancel' => $canCancel,
-            
+
             'created_at' => $booking->created_at->format('d F Y H:i'),
         ];
 
@@ -230,11 +226,11 @@ class ProfileController extends Controller
     {
         $parts = explode(' - ', $timeSlot);
         $startTime = trim($parts[0] ?? '');
-        
+
         $timeParts = explode('.', $startTime);
         $hours = intval($timeParts[0] ?? 0);
         $minutes = intval($timeParts[1] ?? 0);
-        
+
         return ($hours * 60) + $minutes;
     }
 
@@ -251,7 +247,7 @@ class ProfileController extends Controller
             return $slots[0];
         }
 
-        $parsedSlots = array_map(function($slot) {
+        $parsedSlots = array_map(function ($slot) {
             $parts = explode(' - ', $slot);
             return [
                 'start' => trim($parts[0] ?? ''),
@@ -266,7 +262,7 @@ class ProfileController extends Controller
 
         for ($i = 1; $i < count($parsedSlots); $i++) {
             $next = $parsedSlots[$i];
-            
+
             if ($current['end_minutes'] === $next['start_minutes']) {
                 $current['end'] = $next['end'];
                 $current['end_minutes'] = $next['end_minutes'];
@@ -275,7 +271,7 @@ class ProfileController extends Controller
                 $current = $next;
             }
         }
-        
+
         $merged[] = $current['start'] . ' - ' . $current['end'];
 
         if (count($merged) === 1) {
@@ -293,11 +289,11 @@ class ProfileController extends Controller
         $parts = explode('.', $time);
         $hours = intval($parts[0] ?? 0);
         $minutes = intval($parts[1] ?? 0);
-        
+
         if ($hours === 0 && $minutes === 0) {
             return 24 * 60;
         }
-        
+
         return ($hours * 60) + $minutes;
     }
 
@@ -352,7 +348,7 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $client = Auth::guard('client')->user();
-        
+
         if (!$client) {
             return redirect()->route('login')->withErrors(['error' => 'Silakan login terlebih dahulu']);
         }
@@ -389,18 +385,18 @@ class ProfileController extends Controller
     public function cancelBooking(Request $request, $id)
     {
         $client = Auth::guard('client')->user();
-        
+
         if (!$client) {
             return back()->with('error', 'Silakan login terlebih dahulu');
         }
-        
+
         Log::info('🚫 Cancel Booking Request', [
             'booking_id' => $id,
             'client_id' => $client->id,
         ]);
-        
+
         $bookingIds = $request->input('booking_ids', [$id]);
-        
+
         $bookings = Booking::whereIn('id', $bookingIds)
             ->where('client_id', $client->id)
             ->whereIn('status', ['pending', 'confirmed'])
@@ -413,7 +409,7 @@ class ProfileController extends Controller
             return back()->with('error', 'Booking tidak ditemukan atau tidak dapat dibatalkan');
         }
 
-        $hasPaid = $bookings->filter(function($booking) {
+        $hasPaid = $bookings->filter(function ($booking) {
             return $booking->isPaid();
         })->isNotEmpty();
 
@@ -429,9 +425,9 @@ class ProfileController extends Controller
                 'status' => 'cancelled',
                 'payment_status' => 'cancelled',
             ]);
-            
+
             $booking->bookedTimeSlots()->delete();
-            
+
             Log::info('✅ Booking cancelled', [
                 'booking_id' => $booking->id,
                 'bill_no' => $booking->bill_no,

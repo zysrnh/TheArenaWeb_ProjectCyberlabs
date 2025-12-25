@@ -888,7 +888,7 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
           </div>
 
           {/* SECTION ULASAN PELANGGAN */}
-          <div className="bg-[#013064] py-12">
+          <div id="ulasan" className="bg-[#013064] py-12">
             <div className="max-w-7xl mx-auto px-4">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-3xl font-bold text-white">Ulasan Pelanggan</h2>

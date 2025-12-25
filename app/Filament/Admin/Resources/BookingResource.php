@@ -517,12 +517,13 @@ class BookingResource extends Resource
     }
 
     protected static function autoCompleteExpiredBookings(): void
-    {
-        try {
-            $bookings = static::getModel()::where('status', 'confirmed')
-                ->where('booking_date', '<', Carbon::today())
-                ->get();
-
+{
+    try {
+        $bookings = static::getModel()::where('status', 'confirmed')
+            ->where('is_paid', true)                    // ✅ TAMBAH baris ini
+            ->where('payment_status', 'paid')           // ✅ TAMBAH baris ini
+            ->where('booking_date', '<', Carbon::today())
+            ->get();
             $completedCount = 0;
 
             foreach ($bookings as $booking) {
