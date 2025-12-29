@@ -54,6 +54,8 @@ class EquipmentResource extends Resource
                                         'Sepatu' => 'Sepatu',
                                         'Pelindung' => 'Pelindung',
                                         'Aksesoris' => 'Aksesoris',
+                                        'Peralatan Basket' => 'Peralatan Basket',
+                                        'Event & Supporting Tools' => 'Event & Supporting Tools',
                                     ])
                                     ->native(false)
                                     ->searchable()
@@ -213,6 +215,8 @@ class EquipmentResource extends Resource
                         'Sepatu' => 'Sepatu',
                         'Pelindung' => 'Pelindung',
                         'Aksesoris' => 'Aksesoris',
+                        'Peralatan Basket' => 'Peralatan Basket',
+                        'Event & Supporting Tools' => 'Event & Supporting Tools',
                     ])
                     ->multiple()
                     ->searchable(),
@@ -230,8 +234,8 @@ class EquipmentResource extends Resource
                     ->label('Lihat Detail')
                     ->icon('heroicon-o-eye')
                     ->color('info')
-                    ->modalHeading(fn (Equipment $record): string => 'Detail Equipment: ' . $record->name)
-                    ->modalContent(fn (Equipment $record): \Illuminate\View\View => view(
+                    ->modalHeading(fn(Equipment $record): string => 'Detail Equipment: ' . $record->name)
+                    ->modalContent(fn(Equipment $record): \Illuminate\View\View => view(
                         'filament.admin.resources.equipment.view-modal',
                         ['record' => $record]
                     ))
@@ -239,10 +243,10 @@ class EquipmentResource extends Resource
                     ->slideOver()
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Close'),
-                
-                
+
+
                 Tables\Actions\EditAction::make(),
-                
+
                 Tables\Actions\DeleteAction::make()
                     ->action(function (Equipment $record) {
                         $images = ['image_1', 'image_2', 'image_3', 'image_4', 'image_5'];
@@ -325,27 +329,27 @@ class EquipmentResource extends Resource
                     ->schema([
                         Infolists\Components\ImageEntry::make('image_1')
                             ->label('Gambar 1 (Utama)')
-                            ->visible(fn ($record) => $record->image_1)
+                            ->visible(fn($record) => $record->image_1)
                             ->size(300),
 
                         Infolists\Components\ImageEntry::make('image_2')
                             ->label('Gambar 2')
-                            ->visible(fn ($record) => $record->image_2)
+                            ->visible(fn($record) => $record->image_2)
                             ->size(300),
 
                         Infolists\Components\ImageEntry::make('image_3')
                             ->label('Gambar 3')
-                            ->visible(fn ($record) => $record->image_3)
+                            ->visible(fn($record) => $record->image_3)
                             ->size(300),
 
                         Infolists\Components\ImageEntry::make('image_4')
                             ->label('Gambar 4')
-                            ->visible(fn ($record) => $record->image_4)
+                            ->visible(fn($record) => $record->image_4)
                             ->size(300),
 
                         Infolists\Components\ImageEntry::make('image_5')
                             ->label('Gambar 5')
-                            ->visible(fn ($record) => $record->image_5)
+                            ->visible(fn($record) => $record->image_5)
                             ->size(300),
                     ])
                     ->columns(3)

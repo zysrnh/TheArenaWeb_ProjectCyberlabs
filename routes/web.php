@@ -16,10 +16,10 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/storage-link', function () {
-    $targetFolder = $_SERVER['DOCUMENT_ROOT'].'/laravel/storage/app/public';
-    $linkFolder = $_SERVER['DOCUMENT_ROOT'].'/storage';
+    $targetFolder = $_SERVER['DOCUMENT_ROOT'] . '/laravel/storage/app/public';
+    $linkFolder = $_SERVER['DOCUMENT_ROOT'] . '/storage';
     $success = symlink($targetFolder, $linkFolder);
-    echo 'Symlink completed '. $success;
+    echo 'Symlink completed ' . $success;
 });
 
 // Route untuk HomePage
@@ -82,7 +82,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:clie
 Route::middleware('auth:client')->group(function () {
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
-    
+
     // Cancel Booking Route
     Route::post('/profile/booking/{id}/cancel', [ProfileController::class, 'cancelBooking'])->name('profile.booking.cancel');
 });
@@ -123,10 +123,15 @@ Route::middleware('auth:client')->group(function () {
     // Process payment (redirect to Faspay)
     Route::post('/payment/process/{booking}', [PaymentController::class, 'process'])
         ->name('payment.process');
-    
+
     // ✅ Return URL (user comes back from Faspay)
     Route::get('/payment/faspay/return', [PaymentController::class, 'return'])
         ->name('payment.faspay.return');
+
+
+    Route::get('/payment/test-callback', function () {
+        return view('test-callback');
+    })->name('payment.test-callback');
 });
 
 // ✅ Callback from Faspay (server-to-server, NO AUTH)

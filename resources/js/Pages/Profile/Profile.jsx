@@ -76,8 +76,14 @@ function PaymentTimer({ createdAt, onExpired, onAlert }) {
   );
 }
 export default function Profile() {
+
+
   const { auth, upcomingBookings = [], historyBookings = {}, reviewHistory = [], flash,
     shouldShowReviewReminder, completedBookingCount } = usePage().props;
+
+  const [showPaymentCheckModal, setShowPaymentCheckModal] = useState(false);
+  const [checkingBillNo, setCheckingBillNo] = useState(null);
+
   const [activeTab, setActiveTab] = useState('data-profil');
   const [selectedImage, setSelectedImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
@@ -100,6 +106,22 @@ export default function Profile() {
       authClient: auth.client?.id
     });
   }, [shouldShowReviewReminder, completedBookingCount]);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const checkPayment = urlParams.get('check_payment');
+
+    if (checkPayment) {
+      setCheckingBillNo(checkPayment);
+      setShowPaymentCheckModal(true);
+
+      // Auto refresh setelah 3 detik
+      setTimeout(() => {
+        router.reload({ only: ['upcomingBookings'] });
+        setShowPaymentCheckModal(false);
+      }, 3000);
+    }
+  }, []);
 
 
   const { data, setData, post, processing, errors } = useForm({
@@ -297,21 +319,18 @@ export default function Profile() {
       {/* Notification Toast - HARUS ADA INI! */}
       {showNotification && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-[#013064]/80 backdrop-blur-sm"
             onClick={() => setShowNotification(false)}
           />
 
-          {/* Popup */}
           <div className="relative bg-white max-w-md w-full animate-slide-in shadow-2xl">
-            <div className="border-t-4 border-red-500">
-              {/* Header */}
+            <div className={`border-t-4 ${notificationType === 'success' ? 'border-green-500' : 'border-red-500'}`}>
               <div className="bg-[#013064] px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <div className={`w-2 h-2 rounded-full ${notificationType === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
                   <h3 className="font-bold text-white text-lg">
-                    Perhatian
+                    {notificationType === 'success' ? 'Berhasil!' : 'Perhatian'}
                   </h3>
                 </div>
                 <button
@@ -322,27 +341,22 @@ export default function Profile() {
                 </button>
               </div>
 
-              {/* Content */}
               <div className="p-6 bg-white">
                 <p className="text-[#013064] text-base leading-relaxed">
                   {notificationMessage}
                 </p>
               </div>
 
-              {/* Progress Bar - 1.5 detik */}
               <div className="h-1 bg-gray-200 overflow-hidden">
                 <div
-                  className="h-full bg-red-500"
-                  style={{
-                    animation: 'progress 1.5s linear'
-                  }}
+                  className={`h-full ${notificationType === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
+                  style={{ animation: 'progress 3s linear' }}
                 />
               </div>
             </div>
           </div>
         </div>
       )}
-
       <div className="min-h-screen flex flex-col bg-[#013064]">
         <Navigation activePage="profile" />
 
@@ -961,6 +975,25 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      {/* 2️⃣ ✅ TAMBAHKAN MODAL INI DI SINI - Payment Checking Modal */}
+      {showPaymentCheckModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-8 text-center">
+            <div className="mb-4">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#ffd22f] mx-auto"></div>
+            </div>
+            <h3 className="text-xl font-bold text-[#013064] mb-2">Mengecek Status Pembayaran</h3>
+            <p className="text-gray-600 mb-4">
+              Sedang memverifikasi pembayaran Anda...
+            </p>
+            <p className="text-sm text-gray-500">
+              Bill No: {checkingBillNo}
+            </p>
+          </div>
+        </div>
+      )}
+
 
       {/* Cancel Booking Modal */}
       {showCancelModal && (

@@ -1078,7 +1078,7 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
 
             <h3 className="text-3xl font-bold text-[#013064] mb-3">Booking Dalam Prosess</h3>
             <p className="text-gray-600 mb-6">
-              Lakukan Pembayaran di history booking untuk menyelesaikan proses booking Anda.
+              Lakukan Pembayaran di Halaman Profile Jadwal Booking Anda.
             </p>
 
             <div className="bg-[#013064]/5 rounded-lg p-4 mb-6 text-left">

@@ -6,6 +6,7 @@ export default function Navigation({ activePage = "" }) {
   const { auth } = usePage().props;
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState("id"); // 'id' for Indonesian, 'en' for English
 
   useEffect(() => {
     const handleScroll = () => {
@@ -38,12 +39,46 @@ export default function Navigation({ activePage = "" }) {
     }
   }, [isMobileMenuOpen]);
 
+  // Load language from localStorage
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language') || 'id';
+    setCurrentLanguage(savedLanguage);
+  }, []);
+
+  const toggleLanguage = () => {
+    const newLanguage = currentLanguage === "id" ? "en" : "id";
+    setCurrentLanguage(newLanguage);
+    localStorage.setItem('language', newLanguage);
+    // Tambahkan logika untuk mengganti bahasa di seluruh aplikasi
+    // Misalnya: window.location.reload() atau dispatch action ke state management
+  };
+
   const navItems = [
-    { name: "Beranda", href: "/", key: "home" },
-    { name: "Tentang", href: "/tentang", key: "tentang" },
-    { name: "Jadwal & Hasil", href: "/jadwal-hasil", key: "jadwal-hasil" },
-    { name: "Siaran Langsung", href: "/siaran-langsung", key: "siaran-langsung" },
-    { name: "Kontak", href: "/kontak", key: "kontak" },
+    { 
+      name: currentLanguage === "id" ? "Beranda" : "Home", 
+      href: "/", 
+      key: "home" 
+    },
+    { 
+      name: currentLanguage === "id" ? "Tentang" : "About", 
+      href: "/tentang", 
+      key: "tentang" 
+    },
+    { 
+      name: currentLanguage === "id" ? "Jadwal & Hasil" : "Schedule & Results", 
+      href: "/jadwal-hasil", 
+      key: "jadwal-hasil" 
+    },
+    { 
+      name: currentLanguage === "id" ? "Siaran Langsung" : "Live Stream", 
+      href: "/siaran-langsung", 
+      key: "siaran-langsung" 
+    },
+    { 
+      name: currentLanguage === "id" ? "Kontak" : "Contact", 
+      href: "/kontak", 
+      key: "kontak" 
+    },
   ];
 
   return (
@@ -109,6 +144,64 @@ export default function Navigation({ activePage = "" }) {
                 </Link>
               )}
 
+              {/* Language Switcher */}
+              <button
+                onClick={toggleLanguage}
+                className="flex items-center gap-1 p-1.5 md:p-2 hover:bg-[#024b8a] rounded transition group"
+                title={currentLanguage === "id" ? "Switch to English" : "Ganti ke Bahasa Indonesia"}
+              >
+                {currentLanguage === "id" ? (
+                  // Indonesia Flag
+                  <div className="w-6 h-6 md:w-7 md:h-7 rounded overflow-hidden shadow-md group-hover:scale-110 transition-transform">
+                    <div className="w-full h-1/2 bg-red-600"></div>
+                    <div className="w-full h-1/2 bg-white"></div>
+                  </div>
+                ) : (
+                  // USA Flag
+                  <div className="w-6 h-6 md:w-7 md:h-7 rounded overflow-hidden shadow-md group-hover:scale-110 transition-transform">
+                    <svg viewBox="0 0 60 30" className="w-full h-full">
+                      {/* Red stripes */}
+                      <rect width="60" height="30" fill="#B22234"/>
+                      <rect y="3.85" width="60" height="2.3" fill="white"/>
+                      <rect y="7.7" width="60" height="2.3" fill="white"/>
+                      <rect y="11.55" width="60" height="2.3" fill="white"/>
+                      <rect y="15.4" width="60" height="2.3" fill="white"/>
+                      <rect y="19.25" width="60" height="2.3" fill="white"/>
+                      <rect y="23.1" width="60" height="2.3" fill="white"/>
+                      {/* Blue canton */}
+                      <rect width="24" height="15.4" fill="#3C3B6E"/>
+                      {/* Stars (simplified) */}
+                      <g fill="white">
+                        <circle cx="3" cy="2" r="0.8"/>
+                        <circle cx="7" cy="2" r="0.8"/>
+                        <circle cx="11" cy="2" r="0.8"/>
+                        <circle cx="15" cy="2" r="0.8"/>
+                        <circle cx="19" cy="2" r="0.8"/>
+                        <circle cx="5" cy="4.5" r="0.8"/>
+                        <circle cx="9" cy="4.5" r="0.8"/>
+                        <circle cx="13" cy="4.5" r="0.8"/>
+                        <circle cx="17" cy="4.5" r="0.8"/>
+                        <circle cx="21" cy="4.5" r="0.8"/>
+                        <circle cx="3" cy="7" r="0.8"/>
+                        <circle cx="7" cy="7" r="0.8"/>
+                        <circle cx="11" cy="7" r="0.8"/>
+                        <circle cx="15" cy="7" r="0.8"/>
+                        <circle cx="19" cy="7" r="0.8"/>
+                        <circle cx="5" cy="9.5" r="0.8"/>
+                        <circle cx="9" cy="9.5" r="0.8"/>
+                        <circle cx="13" cy="9.5" r="0.8"/>
+                        <circle cx="17" cy="9.5" r="0.8"/>
+                        <circle cx="21" cy="9.5" r="0.8"/>
+                        <circle cx="3" cy="12" r="0.8"/>
+                        <circle cx="7" cy="12" r="0.8"/>
+                        <circle cx="11" cy="12" r="0.8"/>
+                        <circle cx="15" cy="12" r="0.8"/>
+                        <circle cx="19" cy="12" r="0.8"/>
+                      </g>
+                    </svg>
+                  </div>
+                )}
+              </button>
 
               {/* Hamburger Menu Button - Mobile */}
               <button
@@ -142,7 +235,9 @@ export default function Navigation({ activePage = "" }) {
         <div className="flex flex-col h-full">
           {/* Mobile Menu Header */}
           <div className="flex justify-between items-center p-4 border-b border-[#024b8a]">
-            <span className="text-[#ffd22f] font-bold text-lg">Menu</span>
+            <span className="text-[#ffd22f] font-bold text-lg">
+              {currentLanguage === "id" ? "Menu" : "Menu"}
+            </span>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="text-white hover:text-[#ffd22f] transition"
@@ -167,6 +262,67 @@ export default function Navigation({ activePage = "" }) {
                 {item.name}
               </Link>
             ))}
+
+            {/* Language Switcher in Mobile Menu */}
+            <div className="pt-4 border-t border-[#024b8a]">
+              <button
+                onClick={toggleLanguage}
+                className="flex items-center gap-3 text-white hover:text-[#ffd22f] transition w-full py-2"
+              >
+                {currentLanguage === "id" ? (
+                  <>
+                    <div className="w-8 h-8 rounded overflow-hidden shadow-md flex-shrink-0">
+                      <div className="w-full h-1/2 bg-red-600"></div>
+                      <div className="w-full h-1/2 bg-white"></div>
+                    </div>
+                    <span className="text-base">Bahasa Indonesia</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-8 h-8 rounded overflow-hidden shadow-md flex-shrink-0">
+                      <svg viewBox="0 0 60 30" className="w-full h-full">
+                        <rect width="60" height="30" fill="#B22234"/>
+                        <rect y="3.85" width="60" height="2.3" fill="white"/>
+                        <rect y="7.7" width="60" height="2.3" fill="white"/>
+                        <rect y="11.55" width="60" height="2.3" fill="white"/>
+                        <rect y="15.4" width="60" height="2.3" fill="white"/>
+                        <rect y="19.25" width="60" height="2.3" fill="white"/>
+                        <rect y="23.1" width="60" height="2.3" fill="white"/>
+                        <rect width="24" height="15.4" fill="#3C3B6E"/>
+                        <g fill="white">
+                          <circle cx="3" cy="2" r="0.8"/>
+                          <circle cx="7" cy="2" r="0.8"/>
+                          <circle cx="11" cy="2" r="0.8"/>
+                          <circle cx="15" cy="2" r="0.8"/>
+                          <circle cx="19" cy="2" r="0.8"/>
+                          <circle cx="5" cy="4.5" r="0.8"/>
+                          <circle cx="9" cy="4.5" r="0.8"/>
+                          <circle cx="13" cy="4.5" r="0.8"/>
+                          <circle cx="17" cy="4.5" r="0.8"/>
+                          <circle cx="21" cy="4.5" r="0.8"/>
+                          <circle cx="3" cy="7" r="0.8"/>
+                          <circle cx="7" cy="7" r="0.8"/>
+                          <circle cx="11" cy="7" r="0.8"/>
+                          <circle cx="15" cy="7" r="0.8"/>
+                          <circle cx="19" cy="7" r="0.8"/>
+                          <circle cx="5" cy="9.5" r="0.8"/>
+                          <circle cx="9" cy="9.5" r="0.8"/>
+                          <circle cx="13" cy="9.5" r="0.8"/>
+                          <circle cx="17" cy="9.5" r="0.8"/>
+                          <circle cx="21" cy="9.5" r="0.8"/>
+                          <circle cx="3" cy="12" r="0.8"/>
+                          <circle cx="7" cy="12" r="0.8"/>
+                          <circle cx="11" cy="12" r="0.8"/>
+                          <circle cx="15" cy="12" r="0.8"/>
+                          <circle cx="19" cy="12" r="0.8"/>
+                        </g>
+                      </svg>
+                    </div>
+                    <span className="text-base">English</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

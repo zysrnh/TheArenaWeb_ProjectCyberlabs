@@ -393,10 +393,10 @@ export default function HomePage() {
                   </button>
                 </Link>
               </div>
-
+              {/* Navigation Buttons - Hidden on Mobile */}
               <button
                 onClick={prevSlide}
-                className="absolute left-4 md:left-24 lg:left-32 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 flex items-center justify-center"
+                className="hidden md:flex absolute left-4 md:left-24 lg:left-32 top-1/2 -translate-y-1/2 w-12 h-12 lg:w-14 lg:h-14 items-center justify-center hover:scale-110 transition-transform"
               >
                 <img
                   src="/images/Kiri.svg"
@@ -406,7 +406,7 @@ export default function HomePage() {
               </button>
               <button
                 onClick={nextSlide}
-                className="absolute right-4 md:right-24 lg:right-32 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 flex items-center justify-center"
+                className="hidden md:flex absolute right-4 md:right-24 lg:right-32 top-1/2 -translate-y-1/2 w-12 h-12 lg:w-14 lg:h-14 items-center justify-center hover:scale-110 transition-transform"
               >
                 <img
                   src="/images/Kanan.svg"
@@ -421,28 +421,28 @@ export default function HomePage() {
         {/* Social Media Section - RESPONSIVE */}
         <div className="bg-[#ffd22f] py-4 md:py-6">
           <div className="max-w-7xl mx-auto px-4 flex justify-center md:justify-end items-center gap-3 md:gap-4">
-            <a href="#" className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center">
+            <a href="https://www.instagram.com/the.arena.basketball/" className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center">
               <img
                 src="/images/instagram.png"
                 alt="Instagram"
                 className="w-full h-full object-contain"
               />
             </a>
-            <a href="#" className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center">
+            <a href="https://www.tiktok.com/@thearenapvj" className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center">
               <img
                 src="/images/tiktok.png"
                 alt="TikTok"
                 className="w-full h-full object-contain"
               />
             </a>
-            <a href="#" className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center">
+            <a href="https://www.youtube.com/@thearenapvj" className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center">
               <img
                 src="/images/youtube.png"
                 alt="YouTube"
                 className="w-full h-full object-contain"
               />
             </a>
-            <a href="#" className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center">
+            <a href="https://wa.me/6281222977985" className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center">
               <img
                 src="/images/whatsapp.png"
                 alt="WhatsApp"
@@ -763,30 +763,30 @@ export default function HomePage() {
             alt="Basketball Promo"
             className="w-full h-full object-cover"
           /><div className="absolute inset-0 flex items-center">
-  <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 w-full">
-    <div className="max-w-3xl text-white">
-      <span className="text-[#ffd22f] text-base md:text-xl lg:text-2xl font-semibold mb-2 md:mb-3 block">
-        Promo Member
-      </span>
+            <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 w-full">
+              <div className="max-w-3xl text-white">
+                <span className="text-[#ffd22f] text-base md:text-xl lg:text-2xl font-semibold mb-2 md:mb-3 block">
+                  Promo Member
+                </span>
 
-      <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 leading-tight">
-        Harga Lebih Murah untuk Member!
-      </h2>
+                <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 leading-tight">
+                  Harga Lebih Murah untuk Member!
+                </h2>
 
-      <div className="mb-5 md:mb-6 text-sm md:text-base lg:text-lg">
-        <p>Dapatkan harga spesial dan berbagai keuntungan eksklusif. Hubungi admin untuk informasi lengkap tentang paket member kami.</p>
-      </div>
+                <div className="mb-5 md:mb-6 text-sm md:text-base lg:text-lg">
+                  <p>Dapatkan harga spesial dan berbagai keuntungan eksklusif. Hubungi admin untuk informasi lengkap tentang paket member kami.</p>
+                </div>
 
-      <Link 
-         href="https://wa.me/6281222977985" 
-        className="bg-[#ffd22f] text-[#013064] px-5 md:px-7 py-2 md:py-3 text-xs md:text-sm lg:text-base font-bold hover:bg-[#ffe066] transition inline-flex items-center gap-2"
-      >
-        Hubungi Admin
-        <ChevronRight className="w-4 h-4" />
-      </Link>
-    </div>
-  </div>
-</div>
+                <Link
+                  href="https://wa.me/6281222977985"
+                  className="bg-[#ffd22f] text-[#013064] px-5 md:px-7 py-2 md:py-3 text-xs md:text-sm lg:text-base font-bold hover:bg-[#ffe066] transition inline-flex items-center gap-2"
+                >
+                  Hubungi Admin
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Fasilitas Section - RESPONSIVE & DYNAMIC */}
@@ -854,31 +854,31 @@ export default function HomePage() {
                 Jadwal Pertandingan Basket
               </h2>
 
-              {/* Filter Buttons - Updated Design */}
-              <div className="flex flex-wrap justify-center gap-0 mb-8">
+              {/* Filter Buttons - Mobile Responsive Fixed */}
+              <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-0 mb-8 px-4">
                 <button
                   onClick={() => handleFilterChange('all')}
-                  className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all ${filter === 'all'
-                    ? 'bg-[#ffd22f] text-[#013064]'
-                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+                  className={`px-6 sm:px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all whitespace-nowrap ${filter === 'all'
+                      ? 'bg-[#ffd22f] text-[#013064]'
+                      : 'bg-[#013064] text-white border border-white hover:bg-white/10'
                     }`}
                 >
                   Semua
                 </button>
                 <button
                   onClick={() => handleFilterChange('live')}
-                  className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all border-l-0 ${filter === 'live'
-                    ? 'bg-[#ffd22f] text-[#013064]'
-                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+                  className={`px-6 sm:px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all sm:border-l-0 whitespace-nowrap ${filter === 'live'
+                      ? 'bg-[#ffd22f] text-[#013064]'
+                      : 'bg-[#013064] text-white border border-white hover:bg-white/10'
                     }`}
                 >
                   Pertandingan Berlangsung
                 </button>
                 <button
                   onClick={() => handleFilterChange('upcoming')}
-                  className={`px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all border-l-0 ${filter === 'upcoming'
-                    ? 'bg-[#ffd22f] text-[#013064]'
-                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+                  className={`px-6 sm:px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all sm:border-l-0 whitespace-nowrap ${filter === 'upcoming'
+                      ? 'bg-[#ffd22f] text-[#013064]'
+                      : 'bg-[#013064] text-white border border-white hover:bg-white/10'
                     }`}
                 >
                   Pertandingan Berikutnya

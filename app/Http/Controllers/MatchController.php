@@ -21,6 +21,7 @@ class MatchController extends Controller
         $jakartaNow = Carbon::now('Asia/Jakarta');
 
         // Get filter parameters
+        $selectedYear = $request->input('year', ''); // ✅ Tambahkan year filter
         $league = $request->input('league', '');
         $series = $request->input('series', '');
         $region = $request->input('region', '');
@@ -38,20 +39,34 @@ class MatchController extends Controller
             ->pluck('league')
             ->toArray();
 
-        // ✅ Tentukan base date berdasarkan selectedMonth atau sekarang
-        $baseDate = $selectedMonth
-            ? Carbon::parse($selectedMonth, 'Asia/Jakarta')->startOfMonth()
-            : $jakartaNow->copy();
+        // ✅ FIX: Tentukan base date dengan prioritas yang benar
+        if ($selectedDate) {
+            // Jika ada tanggal spesifik yang dipilih, gunakan tanggal tersebut
+            $baseDate = Carbon::parse($selectedDate, 'Asia/Jakarta');
+            // Ambil minggu dari tanggal yang dipilih
+            $startOfWeek = $baseDate->copy()->startOfWeek();
+        } elseif ($selectedMonth) {
+            // Jika ada bulan yang dipilih, gunakan bulan tersebut
+            $baseDate = Carbon::parse($selectedMonth, 'Asia/Jakarta')->startOfMonth();
+            $startOfWeek = $baseDate->copy()->addWeeks($weekOffset);
+        } else {
+            // Default ke hari ini
+            $baseDate = $jakartaNow->copy();
+            $startOfWeek = $baseDate->copy()->startOfWeek()->addWeeks($weekOffset);
+        }
 
-        // Generate 7 hari berdasarkan week offset dari base date
-        $startDate = $baseDate->copy()->startOfDay()->addWeeks($weekOffset);
+        // Generate 7 hari berdasarkan start of week
         $dates = [];
-
         for ($i = 0; $i < 7; $i++) {
-            $currentDate = $startDate->copy()->addDays($i);
+            $currentDate = $startOfWeek->copy()->addDays($i);
 
-            // Hitung jumlah pertandingan di tanggal ini
+            // Hitung jumlah pertandingan di tanggal ini dengan semua filter
             $matchCountQuery = Game::whereDate('date', $currentDate->format('Y-m-d'));
+
+            // ✅ Apply year filter
+            if ($selectedYear !== '') {
+                $matchCountQuery->whereYear('date', $selectedYear);
+            }
 
             // Apply league filter
             if ($league !== '') {
@@ -92,25 +107,39 @@ class MatchController extends Controller
             ];
         }
 
-        // Set selectedDate ke hari ini jika belum ada yang dipilih DAN weekOffset = 0 DAN tidak ada selectedMonth
-        if (!$selectedDate && $weekOffset == 0 && !$selectedMonth) {
-            $selectedDate = $jakartaNow->format('Y-m-d');
-        } elseif (!$selectedDate && !empty($dates)) {
-            $selectedDate = $dates[0]['full_date'];
+        // ✅ FIX: Auto-select date logic yang lebih baik
+        if (!$selectedDate && !empty($dates)) {
+            if ($weekOffset == 0 && !$selectedMonth) {
+                // Cari hari ini di dates array
+                $todayInDates = collect($dates)->firstWhere('is_today', true);
+                if ($todayInDates) {
+                    $selectedDate = $todayInDates['full_date'];
+                } else {
+                    $selectedDate = $dates[0]['full_date'];
+                }
+            } else {
+                // Pilih hari pertama dari week yang ditampilkan
+                $selectedDate = $dates[0]['full_date'];
+            }
         }
 
-        // ✅ Hitung info minggu untuk navigasi (dengan base date yang tepat)
-        $currentWeekStart = $baseDate->copy()->addWeeks($weekOffset);
+        // ✅ Hitung info minggu untuk navigasi
+        $currentWeekStart = $startOfWeek->copy();
         $currentWeekEnd = $currentWeekStart->copy()->addDays(6);
         $weekInfo = [
             'offset' => $weekOffset,
             'start' => $currentWeekStart->format('d M'),
             'end' => $currentWeekEnd->format('d M Y'),
-            'is_current' => $weekOffset == 0 && !$selectedMonth,
+            'is_current' => $weekOffset == 0 && !$selectedMonth && $currentWeekStart->isSameWeek($jakartaNow),
         ];
 
-        // Query matches dengan filter
+        // ✅ Query matches dengan semua filter termasuk year
         $matchesQuery = Game::with(['team1', 'team2', 'team1Category', 'team2Category']);
+
+        // Apply year filter
+        if ($selectedYear !== '') {
+            $matchesQuery->whereYear('date', $selectedYear);
+        }
 
         // Filter by league
         if ($league !== '') {
@@ -185,6 +214,7 @@ class MatchController extends Controller
                 'client' => auth('client')->user()
             ],
             'filters' => [
+                'year' => $selectedYear, // ✅ Tambahkan year ke filters
                 'league' => $league,
                 'series' => $series,
                 'region' => $region,

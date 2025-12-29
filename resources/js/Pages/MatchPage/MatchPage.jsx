@@ -6,7 +6,7 @@ import Footer from "../../Components/Footer";
 import Contact from '../../Components/Contact';
 
 export default function MatchPage({ auth, filters, dates, matches, today, weekInfo, leagues }) {
-  const [selectedYear, setSelectedYear] = useState(filters.year);
+  const [selectedYear, setSelectedYear] = useState(filters.year || '');
   const [selectedLeague, setSelectedLeague] = useState(filters.league);
   const [selectedSeries, setSelectedSeries] = useState(filters.series);
   const [selectedRegion, setSelectedRegion] = useState(filters.region);
@@ -15,7 +15,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
   const [weekOffset, setWeekOffset] = useState(filters.week || 0);
   const [selectedMonth, setSelectedMonth] = useState(filters.month || '');
 
-  // Handle filter changes
+  // ✅ Handle filter changes dengan year
   const handleFilterChange = (filterName, value) => {
     const params = {
       league: filterName === 'league' ? value : selectedLeague,
@@ -27,7 +27,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
       month: filterName === 'month' ? value : selectedMonth,
     };
 
-    // Handle year filter
+    // ✅ Handle year filter
     const yearValue = filterName === 'year' ? value : selectedYear;
     if (yearValue && yearValue !== '') {
       params.year = yearValue;
@@ -39,40 +39,104 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     });
   };
 
-  // Handle week navigation
+  // ✅ Handle week navigation - reset date dan month
   const handleWeekChange = (offset) => {
     setWeekOffset(offset);
     setSelectedDate(null);
-    handleFilterChange('week', offset);
+    setSelectedMonth('');
+    
+    const params = {
+      league: selectedLeague,
+      series: selectedSeries,
+      region: selectedRegion,
+      search: searchQuery,
+      week: offset,
+    };
+
+    if (selectedYear && selectedYear !== '') {
+      params.year = selectedYear;
+    }
+
+    router.get('/jadwal-hasil', params, {
+      preserveState: true,
+      preserveScroll: true,
+    });
   };
 
-  // Handle month selection from date picker
+  // ✅ Handle month selection - reset date dan week
   const handleMonthChange = (e) => {
     const month = e.target.value;
     setSelectedMonth(month);
     setWeekOffset(0);
     setSelectedDate(null);
-    handleFilterChange('month', month);
+    
+    const params = {
+      league: selectedLeague,
+      series: selectedSeries,
+      region: selectedRegion,
+      search: searchQuery,
+      month: month,
+    };
+
+    if (selectedYear && selectedYear !== '') {
+      params.year = selectedYear;
+    }
+
+    router.get('/jadwal-hasil', params, {
+      preserveState: true,
+      preserveScroll: true,
+    });
   };
 
-  // Handle specific date selection from date picker
+  // ✅ Handle specific date selection - reset week dan month
   const handleDatePickerChange = (e) => {
     const date = e.target.value;
     setSelectedDate(date);
     setSelectedMonth('');
     setWeekOffset(0);
-    handleFilterChange('date', date);
+    
+    const params = {
+      league: selectedLeague,
+      series: selectedSeries,
+      region: selectedRegion,
+      search: searchQuery,
+      date: date,
+    };
+
+    if (selectedYear && selectedYear !== '') {
+      params.year = selectedYear;
+    }
+
+    router.get('/jadwal-hasil', params, {
+      preserveState: true,
+      preserveScroll: true,
+    });
   };
 
-  // Reset to current month
+  // ✅ Reset to current month
   const resetToCurrentMonth = () => {
     setSelectedMonth('');
     setWeekOffset(0);
     setSelectedDate(null);
-    handleFilterChange('month', '');
+    
+    const params = {
+      league: selectedLeague,
+      series: selectedSeries,
+      region: selectedRegion,
+      search: searchQuery,
+    };
+
+    if (selectedYear && selectedYear !== '') {
+      params.year = selectedYear;
+    }
+
+    router.get('/jadwal-hasil', params, {
+      preserveState: true,
+      preserveScroll: true,
+    });
   };
 
-  // Handle search
+  // ✅ Handle search
   const handleSearch = (e) => {
     e.preventDefault();
 
@@ -143,8 +207,10 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                     className="bg-[#ffd22f] text-[#013064] px-6 py-2.5 text-sm md:text-base font-semibold cursor-pointer appearance-none pr-10 rounded"
                   >
                     <option value="">Semua Tahun</option>
-                    <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
-                    <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
+                    {/* Generate years from 2020 to next year */}
+                    {Array.from({ length: new Date().getFullYear() - 2020 + 2 }, (_, i) => 2020 + i).reverse().map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#013064] pointer-events-none" />
                 </div>
@@ -243,12 +309,12 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
               </div>
 
               {/* Reset Button */}
-              {selectedDate && (
+              {(selectedDate || selectedMonth || weekOffset !== 0) && (
                 <button
                   onClick={resetToCurrentMonth}
                   className="w-full sm:w-auto px-6 py-2.5 bg-white/20 hover:bg-white/30 text-white font-medium rounded transition text-sm whitespace-nowrap"
                 >
-                  Reset
+                  Reset ke Minggu Ini
                 </button>
               )}
             </div>
@@ -291,6 +357,8 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                     key={date.full_date}
                     onClick={() => {
                       setSelectedDate(date.full_date);
+                      setWeekOffset(0);
+                      setSelectedMonth('');
                       handleFilterChange('date', date.full_date);
                     }}
                     className={`cursor-pointer transition-all overflow-hidden ${selectedDate === date.full_date
@@ -456,8 +524,12 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
               </>
             ) : (
               <div className="text-center py-12">
-                <p className="text-white text-xl">Pilih tanggal untuk melihat pertandingan</p>
-                <p className="text-white/70 text-sm mt-2">Klik salah satu tanggal di atas</p>
+                <p className="text-white text-xl">
+                  {selectedDate ? 'Tidak ada pertandingan di tanggal ini' : 'Pilih tanggal untuk melihat pertandingan'}
+                </p>
+                <p className="text-white/70 text-sm mt-2">
+                  {selectedDate ? 'Coba pilih tanggal lain atau ubah filter' : 'Klik salah satu tanggal di atas'}
+                </p>
               </div>
             )}
           </div>
