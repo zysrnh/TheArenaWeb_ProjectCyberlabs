@@ -109,37 +109,37 @@ export default function Footer() {
                     href="https://www.instagram.com/the.arena.basketball/" 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="w-9 h-9 md:w-10 md:h-10 bg-[#013064] rounded-full flex items-center justify-center hover:opacity-80 transition"
+                    className="hover:opacity-80 transition"
                     aria-label="Instagram"
                   >
-                    <Instagram className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                    <img src="/images/instagram.png" alt="Instagram" className="w-9 h-9 md:w-10 md:h-10" />
                   </a>
                   <a 
                     href="https://tiktok.com" 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="w-9 h-9 md:w-10 md:h-10 bg-[#013064] rounded-full flex items-center justify-center hover:opacity-80 transition"
+                    className="hover:opacity-80 transition"
                     aria-label="TikTok"
                   >
-                    <Music className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                    <img src="/images/tiktok.png" alt="TikTok" className="w-9 h-9 md:w-10 md:h-10" />
                   </a>
                   <a 
                     href="https://www.youtube.com/@thearenapvj" 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="w-9 h-9 md:w-10 md:h-10 bg-[#013064] rounded-full flex items-center justify-center hover:opacity-80 transition"
+                    className="hover:opacity-80 transition"
                     aria-label="YouTube"
                   >
-                    <Youtube className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                    <img src="/images/youtube.png" alt="YouTube" className="w-9 h-9 md:w-10 md:h-10" />
                   </a>
                   <a 
                     href="https://wa.me/6281222977985" 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="w-9 h-9 md:w-10 md:h-10 bg-[#013064] rounded-full flex items-center justify-center hover:opacity-80 transition"
+                    className="hover:opacity-80 transition"
                     aria-label="WhatsApp"
                   >
-                    <MessageCircle className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                    <img src="/images/whatsapp.png" alt="WhatsApp" className="w-9 h-9 md:w-10 md:h-10" />
                   </a>
                 </div>
               </div>
