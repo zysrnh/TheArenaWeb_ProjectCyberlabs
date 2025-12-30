@@ -1,4 +1,4 @@
-# Molecule ALCO Event QR
+# The Arena Setup
 ## Installation
 ```
 composer install
