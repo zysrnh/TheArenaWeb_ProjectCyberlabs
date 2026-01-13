@@ -10,7 +10,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\EquipmentBookingController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\AboutController; // ✅ Tambahkan ini
+use App\Http\Controllers\AboutController;
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -25,7 +25,7 @@ Route::get('/storage-link', function () {
 // Route untuk HomePage
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// ✅ Route untuk About/Tentang - GUNAKAN CONTROLLER
+// Route untuk About/Tentang
 Route::get('/tentang', [AboutController::class, 'index'])->name('about');
 
 // ============================================
@@ -85,6 +85,18 @@ Route::middleware('auth:client')->group(function () {
 
     // Cancel Booking Route
     Route::post('/profile/booking/{id}/cancel', [ProfileController::class, 'cancelBooking'])->name('profile.booking.cancel');
+    
+    // ============================================
+    // PAYMENT ROUTES (PROTECTED - USER ACTIONS)
+    // ============================================
+    
+    // Process payment (redirect to Faspay) - MUST HAVE CSRF TOKEN
+    Route::post('/payment/process/{booking}', [PaymentController::class, 'process'])
+        ->name('payment.process');
+
+    // Return URL (user comes back from Faspay)
+    Route::get('/payment/faspay/return', [PaymentController::class, 'return'])
+        ->name('payment.faspay.return');
 });
 
 // ============================================
@@ -115,29 +127,32 @@ Route::post('/api/reviews/store', [BookingController::class, 'storeReview'])->mi
 Route::get('/api/reviews', [BookingController::class, 'getReviews']);
 
 // ============================================
-// PAYMENT ROUTES (FASPAY)
+// TESTING ROUTES (HANYA UNTUK DEVELOPMENT)
 // ============================================
+if (config('app.env') !== 'production') {
+    Route::get('/test-callback-health', function () {
+        return response()->json([
+            'status' => 'OK',
+            'message' => 'Callback endpoint is accessible',
+            'timestamp' => now()->toIso8601String(),
+            'config' => [
+                'callback_url' => config('faspay.callback_url'),
+                'return_url' => config('faspay.return_url'),
+                'app_url' => config('app.url'),
+            ]
+        ]);
+    });
 
-// ✅ Protected routes (user must be logged in)
-Route::middleware('auth:client')->group(function () {
-    // Process payment (redirect to Faspay)
-    Route::post('/payment/process/{booking}', [PaymentController::class, 'process'])
-        ->name('payment.process');
-
-    // ✅ Return URL (user comes back from Faspay)
-    Route::get('/payment/faspay/return', [PaymentController::class, 'return'])
-        ->name('payment.faspay.return');
-
-
-    Route::get('/payment/test-callback', function () {
-        return view('test-callback');
-    })->name('payment.test-callback');
-});
-
-// ✅ Callback from Faspay (server-to-server, NO AUTH)
-Route::post('/api/payment/faspay/callback', [PaymentController::class, 'callback'])
-    ->name('payment.faspay.callback');
-
-    // ✅ Check payment status (NO AUTH required - for UAT testing)
-Route::post('/api/payment/check-status', [PaymentController::class, 'checkStatus'])
-    ->name('payment.check-status');
+    Route::post('/test-manual-callback', function (Illuminate\Http\Request $request) {
+        \Log::info('🧪 TEST MANUAL CALLBACK', [
+            'data' => $request->all(),
+            'headers' => $request->headers->all(),
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Test callback received',
+            'data' => $request->all(),
+        ]);
+    });
+}

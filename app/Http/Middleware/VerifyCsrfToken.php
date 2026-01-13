@@ -14,26 +14,33 @@ class VerifyCsrfToken extends Middleware
     protected $addHttpCookie = false;
 
     protected $except = [
-        // ✅ Livewire file upload (CRITICAL untuk fix 401 error)
+        // ============================================
+        // LIVEWIRE FILE UPLOAD
+        // ============================================
         'livewire/upload-file',
         'livewire/upload-file/*',
-        '/livewire/upload-file',
-        '/livewire/upload-file/*',
         
-        // ✅ Faspay callback URLs (WAJIB!)
-        '/api/payment/faspay/callback',
+        // ============================================
+        // FASPAY PAYMENT GATEWAY CALLBACKS
+        // ============================================
+        // ✅ Server-to-server callback (Faspay -> Your Server)
+        // Route: POST /api/payment/faspay/callback
         'api/payment/faspay/callback',
-        '/payment/process/*',
         
-        // ✅ Legacy support (kalau ada yang lama)
-        '/payment/faspay/callback',
-        'payment/faspay/callback',
-        '/payment/callback',
-        'payment/callback',
+        // ✅ Check payment status endpoint (for testing/monitoring)
+        // Route: POST /api/payment/check-status
+        'api/payment/check-status',
         
-        // ✅ Other payment-related endpoints
-        'payment/process',
-        'payment/check-voucher',
-        'form/prepare-checkout',
+        // ============================================
+        // BOOKING API ENDPOINTS (AJAX)
+        // ============================================
+        'api/booking/process',
+        'api/equipment-booking/process',
+        'api/reviews/store',
+        
+        // ============================================
+        // TESTING ENDPOINTS (DEVELOPMENT ONLY)
+        // ============================================
+        'test-manual-callback',
     ];
 }

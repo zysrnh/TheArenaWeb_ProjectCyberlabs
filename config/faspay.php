@@ -23,8 +23,6 @@ return [
     |--------------------------------------------------------------------------
     | API Endpoints
     |--------------------------------------------------------------------------
-    | ✅ FIXED: Sekarang baca dari FASPAY_BASE_URL di .env
-    | Fallback ke sandbox/production URL jika tidak ada
     */
     'base_url' => env('FASPAY_BASE_URL') 
         ?: (env('FASPAY_IS_PRODUCTION', false)
@@ -36,18 +34,26 @@ return [
     |--------------------------------------------------------------------------
     | Callback URLs
     |--------------------------------------------------------------------------
-    | ✅ FIXED: Tambah 'callback_url' sebagai alias dari 'notify_url'
+    | CRITICAL: Callback URL harus bisa diakses dari internet (bukan localhost)
+    | Gunakan ngrok untuk local testing
+    |--------------------------------------------------------------------------
     */
-    'callback_url' => env('FASPAY_CALLBACK_URL', rtrim(env('APP_URL', ''), '/') . '/api/payment/faspay/callback'),
-    'notify_url'   => env('FASPAY_CALLBACK_URL', rtrim(env('APP_URL', ''), '/') . '/api/payment/faspay/callback'),
-    'return_url'   => env('FASPAY_RETURN_URL', rtrim(env('APP_URL', ''), '/') . '/payment/faspay/return'),
+    'callback_url' => env(
+        'FASPAY_CALLBACK_URL', 
+        rtrim(env('APP_URL', 'http://localhost:8000'), '/') . '/api/payment/faspay/callback'
+    ),
+    
+    'return_url' => env(
+        'FASPAY_RETURN_URL', 
+        rtrim(env('APP_URL', 'http://localhost:8000'), '/') . '/payment/faspay/return'
+    ),
 
     /*
     |--------------------------------------------------------------------------
     | Payment Settings
     |--------------------------------------------------------------------------
     */
-    'payment_timeout'       => (int) env('FASPAY_PAYMENT_TIMEOUT', 120),
+    'payment_timeout'       => (int) env('FASPAY_PAYMENT_TIMEOUT', 120), // minutes
     'currency'              => 'IDR',
     'price_per_booking'     => (int) env('BASKET_PRICE_PER_BOOKING', 150000),
 
