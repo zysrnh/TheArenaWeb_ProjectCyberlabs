@@ -1,13 +1,14 @@
 import { Head, Link, useForm, usePage, router } from "@inertiajs/react";
-import { Phone, Mail, MapPin, Clock, Instagram, Youtube, CheckCircle, AlertCircle } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, CheckCircle, AlertCircle, X } from "lucide-react";
 import Navigation from "../../Components/Navigation";
 import Footer from "../../Components/Footer";
 import { useEffect, useState } from "react";
 
 export default function Contact() {
-  const { auth, flash } = usePage().props;
+  const { auth, flash, activeEventNotif = null } = usePage().props;
   const [showSuccess, setShowSuccess] = useState(false);
   const [showAuthWarning, setShowAuthWarning] = useState(false);
+  const [showEventNotifPopup, setShowEventNotifPopup] = useState(false);
   
   const { data, setData, post, processing, errors, reset } = useForm({
     nama: '',
@@ -15,6 +16,13 @@ export default function Contact() {
     subject: '',
     pesan: '',
   });
+
+  // ✅ SHOW EVENT NOTIF POPUP
+  useEffect(() => {
+    if (activeEventNotif) {
+      setShowEventNotifPopup(true);
+    }
+  }, [activeEventNotif]);
 
   useEffect(() => {
     if (flash?.success) {
@@ -50,10 +58,45 @@ export default function Contact() {
     router.visit('/login');
   };
 
+  const handleCloseEventNotifPopup = () => {
+    setShowEventNotifPopup(false);
+  };
+
+  const handleRegisterEvent = () => {
+    if (activeEventNotif?.whatsapp_url) {
+      window.open(activeEventNotif.whatsapp_url, '_blank', 'noopener,noreferrer');
+      handleCloseEventNotifPopup();
+    }
+  };
+
   return (
     <>
       <Head title="THE ARENA - Contact" />
       <style>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes modal-appear {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+
+        .animate-modal-appear {
+          animation: modal-appear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
         * {
           font-family: 'Montserrat', sans-serif;
@@ -120,21 +163,21 @@ export default function Contact() {
                     </p>
                   </div>
                 </div>
-                
               </div>
-{/* Right: Google Map - The Arena Urban */}
-<div className="w-full h-[300px] md:h-[350px] rounded-lg overflow-hidden shadow-lg">
-  <iframe
-    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.7769479528442!2d107.59060777499649!3d-6.917249193082343!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e68e745d6ede55f%3A0xc71097dde9e01f90!2sThe%20Arena%20Urban!5e0!3m2!1sid!2sid!4v1766674344955!5m2!1sid!2sid"
-    width="100%"
-    height="100%"
-    style={{ border: 0 }}
-    allowFullScreen=""
-    loading="lazy"
-    referrerPolicy="no-referrer-when-downgrade"
-    title="The Arena Urban"
-  ></iframe>
-</div>
+
+              {/* Right: Google Map */}
+              <div className="w-full h-[300px] md:h-[350px] rounded-lg overflow-hidden shadow-lg">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.7769479528442!2d107.59060777499649!3d-6.917249193082343!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e68e745d6ede55f%3A0xc71097dde9e01f90!2sThe%20Arena%20Urban!5e0!3m2!1sid!2sid!4v1766674344955!5m2!1sid!2sid"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="The Arena Urban"
+                ></iframe>
+              </div>
             </div>
           </div>
         </div>
@@ -241,6 +284,172 @@ export default function Contact() {
             </form>
           </div>
         </div>
+
+        {/* ✅ EVENT NOTIF POPUP MODAL - SAMA PERSIS SEPERTI HOMEPAGE */}
+        {showEventNotifPopup && activeEventNotif && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={handleCloseEventNotifPopup}
+            />
+            
+            {/* Modal Content - COMPACT SIZE WITH SCROLL */}
+            <div className="relative bg-white rounded-xl max-w-sm w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-modal-appear border-2 border-gray-800">
+              {/* Close Button - STICKY */}
+              <button
+                onClick={handleCloseEventNotifPopup}
+                className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 hover:scale-110"
+              >
+                <X className="w-5 h-5 text-gray-800" strokeWidth={3} />
+              </button>
+
+              {/* Header */}
+              <div className="bg-white px-5 py-4 text-center border-b-2 border-gray-800 sticky top-0 z-20">
+                <h2 className="text-base font-black text-gray-900 uppercase tracking-tight mb-1">
+                  {activeEventNotif.title}
+                </h2>
+                <p className="text-[10px] font-bold text-gray-700 uppercase tracking-wide leading-tight">
+                  Amankan Slot Sebelum Kuota Habis
+                </p>
+              </div>
+
+              {/* Date & Time Section - COMPACT */}
+              <div className="px-5 py-3 text-center border-b-2 border-gray-800 bg-gray-50">
+                <p className="text-xs font-black text-gray-900 uppercase tracking-tight mb-1">
+                  {activeEventNotif.formatted_date}
+                </p>
+                {activeEventNotif.formatted_time && (
+                  <p className="text-[10px] font-bold text-gray-700 tracking-wide">
+                    Jam {activeEventNotif.formatted_time}
+                  </p>
+                )}
+              </div>
+
+              {/* Pricing Grid - COMPACT */}
+              {(activeEventNotif.monthly_price || activeEventNotif.weekly_price) && (
+                <>
+                  <div className="grid grid-cols-2 gap-3 p-4">
+                    {/* Monthly Package */}
+                    {activeEventNotif.monthly_price && (
+                      <div className="border-2 border-gray-800 rounded-lg p-3">
+                        <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1.5 leading-tight">
+                          Bulanan<br/>(Lebih Hemat)
+                        </p>
+                        
+                        {activeEventNotif.monthly_discount_percent && activeEventNotif.monthly_original_price && (
+                          <p className="text-[9px] text-gray-600 line-through mb-1">
+                            Diskon {activeEventNotif.monthly_discount_percent}%
+                          </p>
+                        )}
+                        
+                        <p className="text-2xl font-black text-gray-800 mb-1">
+                          Rp{activeEventNotif.formatted_monthly_price}
+                        </p>
+                    
+                        <div className="space-y-0.5 text-[9px] text-gray-700 font-bold mb-2 pb-2 border-b-2 border-gray-200">
+                          <p>{activeEventNotif.monthly_frequency}</p>
+                          <p> +{activeEventNotif.monthly_loyalty_points}</p>
+                          {activeEventNotif.monthly_note && <p>{activeEventNotif.monthly_note}</p>}
+                        </div>
+                        
+                        <p className="text-[8px] font-black text-gray-800 uppercase tracking-tight text-center">
+                          {activeEventNotif.participant_count}+ Peserta
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Weekly Package */}
+                    {activeEventNotif.weekly_price && (
+                      <div className="border-2 border-gray-800 rounded-lg p-3 bg-gray-50">
+                        <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
+                          Mingguan
+                        </p>
+                        
+                        <p className="text-2xl font-black text-gray-800 mb-1">
+                          Rp{activeEventNotif.formatted_weekly_price}
+                        </p>
+                        
+                        <p className="text-[9px] font-bold text-gray-700 mb-2">
+                          1x pertemuan
+                        </p>
+                        
+                        <div className="space-y-0.5 text-[9px] text-gray-700 font-bold">
+                          <p>+{activeEventNotif.weekly_loyalty_points}</p>
+                          <p>{activeEventNotif.weekly_note}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Benefits Section - COMPACT */}
+                  <div className="px-4 py-3 bg-gray-50 border-y-2 border-gray-800">
+                    <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
+                      Termasuk
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[9px] font-bold text-gray-800 mb-2">
+                      {activeEventNotif.benefits_list && activeEventNotif.benefits_list.map((benefit, idx) => (
+                        <div key={idx}>
+                          <p>{benefit.label || benefit}</p>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <p className="text-[9px] font-black text-gray-800 uppercase tracking-tight pt-2 border-t-2 border-gray-300 text-center leading-tight">
+                      {activeEventNotif.level_tagline}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Description Section */}
+              {!activeEventNotif.monthly_price && !activeEventNotif.weekly_price && activeEventNotif.description && (
+                <div className="p-4 border-b-2 border-gray-800">
+                  <p className="text-[9px] font-bold text-gray-800 leading-relaxed text-center uppercase tracking-wide">
+                    {activeEventNotif.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Event Image - COMPACT */}
+              {activeEventNotif.image_url && (
+                <div className="relative h-32 overflow-hidden mx-4 my-3 rounded-lg border-2 border-gray-800">
+                  <img
+                    src={activeEventNotif.image_url}
+                    alt={activeEventNotif.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Location Info - COMPACT */}
+              {activeEventNotif.location && (
+                <div className="px-4 py-3 text-center border-t-2 border-gray-800 bg-gray-50">
+                  <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1">
+                    Lokasi
+                  </p>
+                  <p className="text-xs font-bold text-gray-800">
+                    {activeEventNotif.location}
+                  </p>
+                </div>
+              )}
+
+              {/* CTA Button - STICKY */}
+              <div className="p-4 bg-white border-t-2 border-gray-800 sticky bottom-0 z-20">
+                <button
+                  onClick={handleRegisterEvent}
+                  className="w-full bg-gray-800 text-white py-3 rounded-lg font-black text-xs hover:bg-gray-900 active:scale-95 transition-all duration-200 uppercase tracking-widest border-2 border-gray-800 hover:shadow-lg"
+                >
+                  Daftar Sekarang
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <Footer />

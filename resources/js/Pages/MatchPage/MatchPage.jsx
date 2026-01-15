@@ -1,11 +1,10 @@
 import { Head, Link, router } from "@inertiajs/react";
-import { useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, Calendar, X } from "lucide-react";
 import Navigation from "../../Components/Navigation";
 import Footer from "../../Components/Footer";
-import Contact from '../../Components/Contact';
 
-export default function MatchPage({ auth, filters, dates, matches, today, weekInfo, leagues }) {
+export default function MatchPage({ auth, filters, dates, matches, today, weekInfo, leagues, activeEventNotif = null }) {
   const [selectedYear, setSelectedYear] = useState(filters.year || '');
   const [selectedLeague, setSelectedLeague] = useState(filters.league);
   const [selectedSeries, setSelectedSeries] = useState(filters.series);
@@ -14,8 +13,15 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const [weekOffset, setWeekOffset] = useState(filters.week || 0);
   const [selectedMonth, setSelectedMonth] = useState(filters.month || '');
+  const [showEventNotifPopup, setShowEventNotifPopup] = useState(false);
 
-  // ✅ Handle filter changes dengan year
+  // ✅ SHOW EVENT NOTIF POPUP
+  useEffect(() => {
+    if (activeEventNotif) {
+      setShowEventNotifPopup(true);
+    }
+  }, [activeEventNotif]);
+
   const handleFilterChange = (filterName, value) => {
     const params = {
       league: filterName === 'league' ? value : selectedLeague,
@@ -27,7 +33,6 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
       month: filterName === 'month' ? value : selectedMonth,
     };
 
-    // ✅ Handle year filter
     const yearValue = filterName === 'year' ? value : selectedYear;
     if (yearValue && yearValue !== '') {
       params.year = yearValue;
@@ -39,7 +44,6 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     });
   };
 
-  // ✅ Handle week navigation - reset date dan month
   const handleWeekChange = (offset) => {
     setWeekOffset(offset);
     setSelectedDate(null);
@@ -63,7 +67,6 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     });
   };
 
-  // ✅ Handle month selection - reset date dan week
   const handleMonthChange = (e) => {
     const month = e.target.value;
     setSelectedMonth(month);
@@ -88,7 +91,6 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     });
   };
 
-  // ✅ Handle specific date selection - reset week dan month
   const handleDatePickerChange = (e) => {
     const date = e.target.value;
     setSelectedDate(date);
@@ -113,7 +115,6 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     });
   };
 
-  // ✅ Reset to current month
   const resetToCurrentMonth = () => {
     setSelectedMonth('');
     setWeekOffset(0);
@@ -136,7 +137,6 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     });
   };
 
-  // ✅ Handle search
   const handleSearch = (e) => {
     e.preventDefault();
 
@@ -160,10 +160,45 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     });
   };
 
+  const handleCloseEventNotifPopup = () => {
+    setShowEventNotifPopup(false);
+  };
+
+  const handleRegisterEvent = () => {
+    if (activeEventNotif?.whatsapp_url) {
+      window.open(activeEventNotif.whatsapp_url, '_blank', 'noopener,noreferrer');
+      handleCloseEventNotifPopup();
+    }
+  };
+
   return (
     <>
       <Head title="THE ARENA - Jadwal & Hasil" />
       <style>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes modal-appear {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+
+        .animate-modal-appear {
+          animation: modal-appear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
         * {
           font-family: 'Montserrat', sans-serif;
@@ -207,7 +242,6 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                     className="bg-[#ffd22f] text-[#013064] px-6 py-2.5 text-sm md:text-base font-semibold cursor-pointer appearance-none pr-10 rounded"
                   >
                     <option value="">Semua Tahun</option>
-                    {/* Generate years from 2020 to next year */}
                     {Array.from({ length: new Date().getFullYear() - 2020 + 2 }, (_, i) => 2020 + i).reverse().map(year => (
                       <option key={year} value={year}>{year}</option>
                     ))}
@@ -430,12 +464,10 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
 
                           {/* Match Info */}
                           <div className="flex flex-col items-center justify-center min-w-[130px] md:min-w-[150px]">
-                            {/* League/Competition - Above Badge */}
                             <p className="text-sm md:text-base font-bold text-gray-800 mb-2 text-center">
                               {match.league}
                             </p>
 
-                            {/* Status Badge */}
                             <div className="mb-1.5">
                               <span className={`px-2.5 py-1 text-xs font-bold uppercase ${match.type === 'live'
                                   ? 'bg-red-600 text-white'
@@ -534,6 +566,173 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
             )}
           </div>
         </div>
+
+        {/* ✅ EVENT NOTIF POPUP MODAL */}
+        {showEventNotifPopup && activeEventNotif && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={handleCloseEventNotifPopup}
+            />
+            
+            {/* Modal Content */}
+            <div className="relative bg-white rounded-xl max-w-sm w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-modal-appear border-2 border-gray-800">
+              {/* Close Button */}
+              <button
+                onClick={handleCloseEventNotifPopup}
+                className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 hover:scale-110"
+              >
+                <X className="w-5 h-5 text-gray-800" strokeWidth={3} />
+              </button>
+
+              {/* Header */}
+              <div className="bg-white px-5 py-4 text-center border-b-2 border-gray-800 sticky top-0 z-20">
+                <h2 className="text-base font-black text-gray-900 uppercase tracking-tight mb-1">
+                  {activeEventNotif.title}
+                </h2>
+                <p className="text-[10px] font-bold text-gray-700 uppercase tracking-wide leading-tight">
+                  Amankan Slot Sebelum Kuota Habis
+                </p>
+              </div>
+
+              {/* Date & Time Section */}
+              <div className="px-5 py-3 text-center border-b-2 border-gray-800 bg-gray-50">
+                <p className="text-xs font-black text-gray-900 uppercase tracking-tight mb-1">
+                  {activeEventNotif.formatted_date}
+                </p>
+                {activeEventNotif.formatted_time && (
+                  <p className="text-[10px] font-bold text-gray-700 tracking-wide">
+                    Jam {activeEventNotif.formatted_time}
+                  </p>
+                )}
+              </div>
+
+              {/* Pricing Grid */}
+              {(activeEventNotif.monthly_price || activeEventNotif.weekly_price) && (
+                <>
+                  <div className="grid grid-cols-2 gap-3 p-4">
+                    {/* Monthly Package */}
+                    {activeEventNotif.monthly_price && (
+                      <div className="border-2 border-gray-800 rounded-lg p-3">
+                        <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1.5 leading-tight">
+                          Bulanan<br/>(Lebih Hemat)
+                        </p>
+                        
+                        {activeEventNotif.monthly_discount_percent && activeEventNotif.monthly_original_price && (
+                          <p className="text-[9px] text-gray-600 line-through mb-1">
+                            Diskon {activeEventNotif.monthly_discount_percent}%
+                          </p>
+                        )}
+                        
+                        <p className="text-2xl font-black text-gray-800 mb-1">
+                          Rp{activeEventNotif.formatted_monthly_price}
+                        </p>
+                    
+                        <div className="space-y-0.5 text-[9px] text-gray-700 font-bold mb-2 pb-2 border-b-2 border-gray-200">
+                          <p>{activeEventNotif.monthly_frequency}</p>
+                          <p> +{activeEventNotif.monthly_loyalty_points}</p>
+                          {activeEventNotif.monthly_note && <p>{activeEventNotif.monthly_note}</p>}
+                        </div>
+                        
+                        <p className="text-[8px] font-black text-gray-800 uppercase tracking-tight text-center">
+                          {activeEventNotif.participant_count}+ Peserta
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Weekly Package */}
+                    {activeEventNotif.weekly_price && (
+                      <div className="border-2 border-gray-800 rounded-lg p-3 bg-gray-50">
+                        <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
+                          Mingguan
+                        </p>
+                        
+                        <p className="text-2xl font-black text-gray-800 mb-1">
+                          Rp{activeEventNotif.formatted_weekly_price}
+                        </p>
+                        
+                        <p className="text-[9px] font-bold text-gray-700 mb-2">
+                          1x pertemuan
+                        </p>
+                        
+                        <div className="space-y-0.5 text-[9px] text-gray-700 font-bold">
+                          <p>+{activeEventNotif.weekly_loyalty_points}</p>
+                          <p>{activeEventNotif.weekly_note}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Benefits Section */}
+                  <div className="px-4 py-3 bg-gray-50 border-y-2 border-gray-800">
+                    <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
+                      Termasuk
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[9px] font-bold text-gray-800 mb-2">
+                      {activeEventNotif.benefits_list && activeEventNotif.benefits_list.map((benefit, idx) => (
+                        <div key={idx}>
+                          <p>{benefit.label || benefit}</p>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <p className="text-[9px] font-black text-gray-800 uppercase tracking-tight pt-2 border-t-2 border-gray-300 text-center leading-tight">
+                      {activeEventNotif.level_tagline}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Description Section */}
+              {!activeEventNotif.monthly_price && !activeEventNotif.weekly_price && activeEventNotif.description && (
+                <div className="p-4 border-b-2 border-gray-800">
+                  <p className="text-[9px] font-bold text-gray-800 leading-relaxed text-center uppercase tracking-wide">
+                    {activeEventNotif.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Event Image */}
+              {activeEventNotif.image_url && (
+                <div className="relative h-32 overflow-hidden mx-4 my-3 rounded-lg border-2 border-gray-800">
+                  <img
+                    src={activeEventNotif.image_url}
+                    alt={activeEventNotif.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Location Info */}
+              {activeEventNotif.location && (
+                <div className="px-4 py-3 text-center border-t-2 border-gray-800 bg-gray-50">
+                  <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1">
+                    Lokasi
+                  </p>
+                  <p className="text-xs font-bold text-gray-800">
+                    {activeEventNotif.location}
+                  </p>
+                </div>
+              )}
+
+              {/* CTA Button */}
+              <div className="p-4 bg-white border-t-2 border-gray-800 sticky bottom-0 z-20">
+                <button
+                  onClick={handleRegisterEvent}
+                  className="w-full bg-gray-800 text-white py-3 rounded-lg font-black text-xs hover:bg-gray-900 active:scale-95 transition-all duration-200 uppercase tracking-widest border-2 border-gray-800 hover:shadow-lg"
+                >
+                  Daftar Sekarang
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <Footer />
       </div>
     </>
