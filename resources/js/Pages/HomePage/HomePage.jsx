@@ -26,7 +26,7 @@ export default function HomePage() {
   const [filter, setFilter] = useState(currentFilter || 'all');
   const [reviewsList, setReviewsList] = useState(reviews);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [currentFacilityIndex, setCurrentFacilityIndex] = useState(0);
+ 
   const [reviewForm, setReviewForm] = useState({
     rating_facilities: 5,
     rating_hospitality: 5,
@@ -52,19 +52,7 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [reviewsList.length]);
 
-  // ✅ USEEFFECT AUTO-ROTATE FACILITIES (TERPISAH!)
-  useEffect(() => {
-    if (facilities.length < 3) return;
-
-    const interval = setInterval(() => {
-      setCurrentFacilityIndex((prev) => {
-        const totalSets = Math.ceil(facilities.length / 3);
-        return (prev + 1) % totalSets;
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [facilities.length]);
+ 
 
  useEffect(() => {
   if (activeEventNotif) {
@@ -79,29 +67,7 @@ export default function HomePage() {
   const currentReviews = reviewsList.slice(startIndex, startIndex + reviewsPerPage);
   const totalReviewPages = Math.ceil(reviewsList.length / reviewsPerPage);
 
-  // ✅ Get current facilities to display (3 items)
-  const currentFacilities = facilities.length > 0
-    ? facilities.slice(currentFacilityIndex * 3, currentFacilityIndex * 3 + 3)
-    : [
-      {
-        id: 1,
-        name: 'Makanan & Minuman',
-        image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800',
-        description: 'Nikmati berbagai pilihan makanan dan minuman'
-      },
-      {
-        id: 2,
-        name: 'Penitipan Barang',
-        image: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=800',
-        description: 'Loker aman untuk barang berharga Anda'
-      },
-      {
-        id: 3,
-        name: 'Toilet dan Kamar Mandi',
-        image: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=800',
-        description: 'Fasilitas bersih dan terawat'
-      }
-    ];
+  
 
   const handleFilterChange = (newFilter) => {
     setFilter(newFilter);
@@ -223,6 +189,33 @@ const handleRegisterEvent = () => {
     window.open(activeEventNotif.whatsapp_url, '_blank', 'noopener,noreferrer');
     handleCloseEventNotifPopup();
   }
+};
+const getFacilityImageUrl = (url) => {
+  if (!url) {
+    return 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800';
+  }
+  if (url.startsWith('http')) return url;
+  return `/storage/${url}`;
+};
+
+const getDefaultFacilityImage = (facilityName) => {
+  const name = facilityName?.toLowerCase() || '';
+  if (name.includes('cafe') || name.includes('resto')) {
+    return 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800';
+  } else if (name.includes('makanan')) {
+    return 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=800';
+  } else if (name.includes('minuman')) {
+    return 'https://images.unsplash.com/photo-1534353436294-0dbd4bdac845?w=800';
+  } else if (name.includes('ganti')) {
+    return 'https://images.unsplash.com/photo-1534349762230-e0cadf78f5da?w=800';
+  } else if (name.includes('parkir')) {
+    return 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800';
+  } else if (name.includes('wifi')) {
+    return 'https://images.unsplash.com/photo-1551808525-51a94da548ce?w=800';
+  } else if (name.includes('tribun')) {
+    return 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800';
+  }
+  return 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800';
 };
 
   const slides = [
@@ -862,23 +855,21 @@ const handleRegisterEvent = () => {
             </div>
           </div>
         </div>
-
-        {/* Fasilitas Section - RESPONSIVE & DYNAMIC */}
+{/* Facilities Section - RESPONSIVE */}
         <div className="bg-white">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {currentFacilities.length > 0 ? (
-              currentFacilities.map((facility) => (
-                <div
+            {Array.isArray(facilities) && facilities.length > 0 ? (
+              facilities.slice(0, 6).map((facility) => (
+                <div 
                   key={facility.id}
-                  className="group cursor-pointer overflow-hidden relative h-[280px] md:h-[320px] lg:h-[350px]"
+                  className="group overflow-hidden relative h-[280px] md:h-[320px] lg:h-[350px]"
                 >
                   <img
-                    src={facility.image || 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800'}
+                    src={facility.image}
                     alt={facility.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     onError={(e) => {
-                      e.target.onerror = null; // Prevent infinite loop
-                      e.target.src = 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800';
+                      e.target.src = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800';
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
@@ -886,11 +877,11 @@ const handleRegisterEvent = () => {
                     <span className="text-[#ffd22f] text-sm md:text-base lg:text-lg font-semibold mb-1 md:mb-2 block">
                       Fasilitas
                     </span>
-                    <h3 className="text-xl md:text-2xl lg:text-3xl font-bold">
+                    <h3 className="text-xl md:text-2xl lg:text-3xl font-bold mb-2">
                       {facility.name}
                     </h3>
                     {facility.description && (
-                      <p className="text-sm text-gray-300 mt-2 line-clamp-2">
+                      <p className="text-sm text-gray-300 line-clamp-2 leading-relaxed">
                         {facility.description}
                       </p>
                     )}
