@@ -880,11 +880,6 @@ const getDefaultFacilityImage = (facilityName) => {
                     <h3 className="text-xl md:text-2xl lg:text-3xl font-bold mb-2">
                       {facility.name}
                     </h3>
-                    {facility.description && (
-                      <p className="text-sm text-gray-300 line-clamp-2 leading-relaxed">
-                        {facility.description}
-                      </p>
-                    )}
                   </div>
                 </div>
               ))
