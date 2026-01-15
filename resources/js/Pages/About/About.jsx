@@ -176,6 +176,34 @@ const handleRegisterEvent = () => {
             font-size: 18px;
           }
         }
+          @keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
       `}</style>
       
       <div className="min-h-screen flex flex-col bg-white">
@@ -525,6 +553,36 @@ const handleRegisterEvent = () => {
 
         <Footer />
       </div>
+      {/* Floating WhatsApp Button - FIXED */}
+<a
+  href="https://wa.me/6281222977985"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="fixed bottom-6 right-6 z-50 group"
+  aria-label="Chat WhatsApp"
+>
+  {/* Pulse Ring Effect */}
+  <div className="absolute inset-0 bg-[#25D366] rounded-full animate-pulse-ring"></div>
+  
+  {/* Main Button */}
+  <div className="relative bg-[#25D366] hover:bg-[#20BA5A] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 animate-float">
+    <img
+      src="/images/whatsapp-symbol-logo-svgrepo-com.svg"
+      alt="WhatsApp"
+      className="w-8 h-8 md:w-9 md:h-9"
+    />
+  </div>
+  
+  {/* Tooltip */}
+  <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+    <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-xl">
+      Chat dengan Kami
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
+        <div className="border-8 border-transparent border-l-gray-900"></div>
+      </div>
+    </div>
+  </div>
+</a>
     </>
   );
 }
