@@ -218,7 +218,7 @@ const getDefaultFacilityImage = (facilityName) => {
   return 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800';
 };
 
-  const slides = [
+ const slides = [
     {
       title: "BOOKING LAPANGAN SEKARANG!",
       subtitle: "The Arena Basketball",
@@ -228,6 +228,9 @@ const getDefaultFacilityImage = (facilityName) => {
         </>
       ),
       image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200",
+      buttonText: "Booking Sekarang",
+      buttonAction: "internal",
+      buttonLink: "/booking"
     },
     {
       title: "PENYEWAAN LAPANGAN BASKET",
@@ -238,6 +241,9 @@ const getDefaultFacilityImage = (facilityName) => {
         </>
       ),
       image: "https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200",
+      buttonText: "Booking Lapangan",
+      buttonAction: "internal",
+      buttonLink: "/booking"
     },
     {
       title: "PENYEWAAN PERLENGKAPAN BASKET",
@@ -248,6 +254,9 @@ const getDefaultFacilityImage = (facilityName) => {
         </>
       ),
       image: "https://images.unsplash.com/photo-1608245449230-4ac19066d2d0?w=1200",
+      buttonText: "Booking Peralatan",
+      buttonAction: "internal",
+      buttonLink: "/booking-peralatan"
     },
     {
       title: "PENYELENGGARAAN ACARA BASKET",
@@ -258,9 +267,11 @@ const getDefaultFacilityImage = (facilityName) => {
         </>
       ),
       image: "https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200",
+      buttonText: "Hubungi Kami",
+      buttonAction: "whatsapp",
+      buttonLink: "https://wa.me/6281222977985"
     },
   ];
-
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
   };
@@ -431,57 +442,76 @@ const getDefaultFacilityImage = (facilityName) => {
         )}
 
         {/* Hero Section with Carousel - RESPONSIVE */}
-        <main className="flex-1 relative">
-          <div className="relative h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden">
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{
-                backgroundImage: `url('${slides[currentSlide].image}')`,
-                filter: "brightness(0.4)",
-              }}
-            />
+<main className="flex-1 relative">
+  <div className="relative h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden">
+    {/* Background Image */}
+    <div
+      className="absolute inset-0 bg-cover bg-center transition-all duration-700"
+      style={{
+        backgroundImage: `url('${slides[currentSlide].image}')`,
+        filter: "brightness(0.4)",
+      }}
+    />
 
-            <div className="relative z-10 h-full flex items-center justify-center">
-              <div className="text-center text-white px-4 max-w-4xl">
-                <h2 className="text-[#FDB913] text-lg md:text-xl lg:text-2xl font-semibold mb-2">
-                  {slides[currentSlide].subtitle}
-                </h2>
-                <h1 className="text-2xl md:text-4xl lg:text-6xl font-bold mb-4 md:mb-6 leading-tight">
-                  {slides[currentSlide].title}
-                </h1>
-                <p className="text-sm md:text-base lg:text-lg mb-6 md:mb-8 text-gray-200 max-w-2xl mx-auto leading-relaxed">
-                  {slides[currentSlide].description}
-                </p>
-                <Link href="/booking">
-                  <button className="bg-[#ffd22f] text-[#013064] px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition inline-flex items-center gap-2 w-fit">
-                    Booking Sekarang
-                  </button>
-                </Link>
-              </div>
-              {/* Navigation Buttons - Hidden on Mobile */}
-              <button
-                onClick={prevSlide}
-                className="hidden md:flex absolute left-4 md:left-24 lg:left-32 top-1/2 -translate-y-1/2 w-12 h-12 lg:w-14 lg:h-14 items-center justify-center hover:scale-110 transition-transform"
-              >
-                <img
-                  src="/images/Kiri.svg"
-                  alt="Previous"
-                  className="w-full h-full"
-                />
-              </button>
-              <button
-                onClick={nextSlide}
-                className="hidden md:flex absolute right-4 md:right-24 lg:right-32 top-1/2 -translate-y-1/2 w-12 h-12 lg:w-14 lg:h-14 items-center justify-center hover:scale-110 transition-transform"
-              >
-                <img
-                  src="/images/Kanan.svg"
-                  alt="Next"
-                  className="w-full h-full"
-                />
-              </button>
-            </div>
-          </div>
-        </main>
+    {/* Content */}
+    <div className="relative z-10 h-full flex items-center justify-center">
+      <div className="text-center text-white px-4 max-w-4xl">
+        <h2 className="text-[#FDB913] text-lg md:text-xl lg:text-2xl font-semibold mb-2">
+          {slides[currentSlide].subtitle}
+        </h2>
+
+        <h1 className="text-2xl md:text-4xl lg:text-6xl font-bold mb-4 md:mb-6 leading-tight">
+          {slides[currentSlide].title}
+        </h1>
+
+        <p className="text-sm md:text-base lg:text-lg mb-6 md:mb-8 text-gray-200 max-w-2xl mx-auto leading-relaxed">
+          {slides[currentSlide].description}
+        </p>
+
+        {/* Button */}
+        {slides[currentSlide].buttonAction === "whatsapp" ? (
+          <a
+            href={slides[currentSlide].buttonLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#ffd22f] text-[#013064] px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition inline-flex items-center gap-2 w-fit mx-auto"
+          >
+            {slides[currentSlide].buttonText}
+          </a>
+        ) : (
+          <Link href={slides[currentSlide].buttonLink}>
+            <button className="bg-[#ffd22f] text-[#013064] px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition inline-flex items-center gap-2 w-fit mx-auto">
+              {slides[currentSlide].buttonText}
+            </button>
+          </Link>
+        )}
+      </div>
+
+      {/* Navigation Buttons - Hidden on Mobile */}
+      <button
+        onClick={prevSlide}
+        className="hidden md:flex absolute left-4 md:left-24 lg:left-32 top-1/2 -translate-y-1/2 w-12 h-12 lg:w-14 lg:h-14 items-center justify-center hover:scale-110 transition-transform"
+      >
+        <img
+          src="/images/Kiri.svg"
+          alt="Previous"
+          className="w-full h-full"
+        />
+      </button>
+
+      <button
+        onClick={nextSlide}
+        className="hidden md:flex absolute right-4 md:right-24 lg:right-32 top-1/2 -translate-y-1/2 w-12 h-12 lg:w-14 lg:h-14 items-center justify-center hover:scale-110 transition-transform"
+      >
+        <img
+          src="/images/Kanan.svg"
+          alt="Next"
+          className="w-full h-full"
+        />
+      </button>
+    </div>
+  </div>
+</main>
 
         {/* Social Media Section - RESPONSIVE */}
         <div className="bg-[#ffd22f] py-4 md:py-6">

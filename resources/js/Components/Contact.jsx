@@ -24,20 +24,25 @@ const Contact = () => {
         <div className="grid md:grid-cols-2 gap-8 md:gap-12 h-full items-center">
           {/* Text Content */}
           <div className="text-white">
-            <p className="text-[#ffd22f] text-base md:text-xl lg:text-2xl font-semibold mb-3 md:mb-4">
-              Kontak
-            </p>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 md:mb-8 leading-tight">
-              Hubungi kami untuk informasi lebih lanjut!
-            </h2>
-            <a
-              href="http://127.0.0.1:8000/kontak"
-              className="bg-[#ffd22f] text-[#013064] px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition inline-flex items-center gap-2 w-fit"
-            >
-              Kontak Kami
-              <Phone className="w-4 h-4 md:w-5 md:h-5" />
-            </a>
-          </div>
+  <p className="text-[#ffd22f] text-base md:text-xl lg:text-2xl font-semibold mb-3 md:mb-4">
+    Kontak
+  </p>
+
+  <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 md:mb-8 leading-tight">
+    Hubungi kami untuk informasi lebih lanjut!
+  </h2>
+
+  <a
+    href="https://wa.me/6281222977985"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="bg-[#ffd22f] text-[#013064] px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition inline-flex items-center gap-2 w-fit"
+  >
+    Kontak Kami
+    <Phone className="w-4 h-4 md:w-5 md:h-5" />
+  </a>
+</div>
+
 
           {/* Player Image */}
           <div className="hidden md:flex justify-end items-end h-full">

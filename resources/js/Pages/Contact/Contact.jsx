@@ -9,7 +9,7 @@ export default function Contact() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showAuthWarning, setShowAuthWarning] = useState(false);
   const [showEventNotifPopup, setShowEventNotifPopup] = useState(false);
-  
+
   const { data, setData, post, processing, errors, reset } = useForm({
     nama: '',
     email: '',
@@ -36,7 +36,7 @@ export default function Contact() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Check if user is logged in
     if (!auth?.client) {
       setShowAuthWarning(true);
@@ -153,32 +153,50 @@ export default function Contact() {
               {/* Left: Contact Information */}
               <div className="text-white space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="bg-[#ffd22f] rounded-full p-3 flex-shrink-0">
-                    <Phone className="w-5 h-5 text-[#013064]" />
-                  </div>
-                  <div>
-                    <p className="text-white text-base">+6812-2297-7985</p>
-                  </div>
+                  <a
+                    href="https://wa.me/6281222977985"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-4"
+                  >
+                    <div className="bg-[#ffd22f] rounded-full p-3 flex-shrink-0">
+                      <Phone className="w-5 h-5 text-[#013064]" />
+                    </div>
+                    <div>
+                      <p className="text-white text-base">+6812-2297-7985</p>
+                    </div>
+                  </a>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="bg-[#ffd22f] rounded-full p-3 flex-shrink-0">
-                    <Mail className="w-5 h-5 text-[#013064]" />
-                  </div>
-                  <div>
-                    <p className="text-white text-base">arena.basketball.id@gmail.com</p>
-                  </div>
+                  <a
+                    href="mailto:arena.basketball.id@gmail.com"
+                    className="flex items-start gap-4"
+                  >
+                    <div className="bg-[#ffd22f] rounded-full p-3 flex-shrink-0">
+                      <Mail className="w-5 h-5 text-[#013064]" />
+                    </div>
+                    <div>
+                      <p className="text-white text-base">arena.basketball.id@gmail.com</p>
+                    </div>
+                  </a>
                 </div>
-
                 <div className="flex items-start gap-4">
-                  <div className="bg-[#ffd22f] rounded-full p-3 flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-[#013064]" />
-                  </div>
-                  <div>
-                    <p className="text-white text-base">
-                      The Arena Urban – Jl. Kelenteng No. 41, Ciroyom, Andir, Kota Bandung
-                    </p>
-                  </div>
+                  <a
+                    href="https://maps.google.com/?q=The+Arena+Urban+Bandung"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-4"
+                  >
+                    <div className="bg-[#ffd22f] rounded-full p-3 flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-[#013064]" />
+                    </div>
+                    <div>
+                      <p className="text-white text-base">
+                        The Arena Urban – Jl. Kelenteng No. 41, Ciroyom, Andir, Kota Bandung
+                      </p>
+                    </div>
+                  </a>
                 </div>
 
                 <div className="flex items-start gap-4">
@@ -317,11 +335,11 @@ export default function Contact() {
         {showEventNotifPopup && activeEventNotif && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
             {/* Backdrop */}
-            <div 
+            <div
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
               onClick={handleCloseEventNotifPopup}
             />
-            
+
             {/* Modal Content - COMPACT SIZE WITH SCROLL */}
             <div className="relative bg-white rounded-xl max-w-sm w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-modal-appear border-2 border-gray-800">
               {/* Close Button - STICKY */}
@@ -362,25 +380,25 @@ export default function Contact() {
                     {activeEventNotif.monthly_price && (
                       <div className="border-2 border-gray-800 rounded-lg p-3">
                         <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1.5 leading-tight">
-                          Bulanan<br/>(Lebih Hemat)
+                          Bulanan<br />(Lebih Hemat)
                         </p>
-                        
+
                         {activeEventNotif.monthly_discount_percent && activeEventNotif.monthly_original_price && (
                           <p className="text-[9px] text-gray-600 line-through mb-1">
                             Diskon {activeEventNotif.monthly_discount_percent}%
                           </p>
                         )}
-                        
+
                         <p className="text-2xl font-black text-gray-800 mb-1">
                           Rp{activeEventNotif.formatted_monthly_price}
                         </p>
-                    
+
                         <div className="space-y-0.5 text-[9px] text-gray-700 font-bold mb-2 pb-2 border-b-2 border-gray-200">
                           <p>{activeEventNotif.monthly_frequency}</p>
                           <p> +{activeEventNotif.monthly_loyalty_points}</p>
                           {activeEventNotif.monthly_note && <p>{activeEventNotif.monthly_note}</p>}
                         </div>
-                        
+
                         <p className="text-[8px] font-black text-gray-800 uppercase tracking-tight text-center">
                           {activeEventNotif.participant_count}+ Peserta
                         </p>
@@ -393,15 +411,15 @@ export default function Contact() {
                         <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
                           Mingguan
                         </p>
-                        
+
                         <p className="text-2xl font-black text-gray-800 mb-1">
                           Rp{activeEventNotif.formatted_weekly_price}
                         </p>
-                        
+
                         <p className="text-[9px] font-bold text-gray-700 mb-2">
                           1x pertemuan
                         </p>
-                        
+
                         <div className="space-y-0.5 text-[9px] text-gray-700 font-bold">
                           <p>+{activeEventNotif.weekly_loyalty_points}</p>
                           <p>{activeEventNotif.weekly_note}</p>
@@ -415,7 +433,7 @@ export default function Contact() {
                     <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
                       Termasuk
                     </p>
-                    
+
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[9px] font-bold text-gray-800 mb-2">
                       {activeEventNotif.benefits_list && activeEventNotif.benefits_list.map((benefit, idx) => (
                         <div key={idx}>
@@ -423,7 +441,7 @@ export default function Contact() {
                         </div>
                       ))}
                     </div>
-                    
+
                     <p className="text-[9px] font-black text-gray-800 uppercase tracking-tight pt-2 border-t-2 border-gray-300 text-center leading-tight">
                       {activeEventNotif.level_tagline}
                     </p>
@@ -482,34 +500,34 @@ export default function Contact() {
         {/* Footer */}
         <Footer />
         <a
-  href="https://wa.me/6281222977985"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="fixed bottom-6 right-6 z-50 group"
-  aria-label="Chat WhatsApp"
->
-  {/* Pulse Ring Effect */}
-  <div className="absolute inset-0 bg-[#25D366] rounded-full animate-pulse-ring"></div>
-  
-  {/* Main Button */}
-  <div className="relative bg-[#25D366] hover:bg-[#20BA5A] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 animate-float">
-    <img
-      src="/images/whatsapp-symbol-logo-svgrepo-com.svg"
-      alt="WhatsApp"
-      className="w-8 h-8 md:w-9 md:h-9"
-    />
-  </div>
-  
-  {/* Tooltip */}
-  <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-    <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-xl">
-      Chat dengan Kami
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
-        <div className="border-8 border-transparent border-l-gray-900"></div>
-      </div>
-    </div>
-  </div>
-</a>
+          href="https://wa.me/6281222977985"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 z-50 group"
+          aria-label="Chat WhatsApp"
+        >
+          {/* Pulse Ring Effect */}
+          <div className="absolute inset-0 bg-[#25D366] rounded-full animate-pulse-ring"></div>
+
+          {/* Main Button */}
+          <div className="relative bg-[#25D366] hover:bg-[#20BA5A] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 animate-float">
+            <img
+              src="/images/whatsapp-symbol-logo-svgrepo-com.svg"
+              alt="WhatsApp"
+              className="w-8 h-8 md:w-9 md:h-9"
+            />
+          </div>
+
+          {/* Tooltip */}
+          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-xl">
+              Chat dengan Kami
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
+                <div className="border-8 border-transparent border-l-gray-900"></div>
+              </div>
+            </div>
+          </div>
+        </a>
       </div>
     </>
   );
