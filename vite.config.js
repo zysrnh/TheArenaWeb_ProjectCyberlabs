@@ -8,6 +8,7 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.jsx'],
             refresh: true,
+            buildDirectory: 'build', // ⬅️ TAMBAH INI
         }),
         tailwindcss(),
         react(),
@@ -21,9 +22,5 @@ export default defineConfig({
         hmr: {
             host: 'localhost',
         },
-    },
-    build: {
-        manifest: true,
-        outDir: 'public/build',
     },
 });

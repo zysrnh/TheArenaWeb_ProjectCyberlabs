@@ -7,6 +7,7 @@ export default function Navigation({ activePage = "" }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("id"); // 'id' for Indonesian, 'en' for English
+  const [isGoogleTranslateReady, setIsGoogleTranslateReady] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,18 +40,55 @@ export default function Navigation({ activePage = "" }) {
     }
   }, [isMobileMenuOpen]);
 
-  // Load language from localStorage
+  // Check if Google Translate is ready
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('language') || 'id';
-    setCurrentLanguage(savedLanguage);
+    const checkGoogleTranslate = setInterval(() => {
+      const combo = document.querySelector('.goog-te-combo');
+      if (combo) {
+        setIsGoogleTranslateReady(true);
+        clearInterval(checkGoogleTranslate);
+        
+        // Load saved language
+        const savedLanguage = localStorage.getItem('language') || 'id';
+        setCurrentLanguage(savedLanguage);
+        
+        // Apply saved language
+        if (savedLanguage !== 'id') {
+          setTimeout(() => {
+            combo.value = savedLanguage;
+            combo.dispatchEvent(new Event('change'));
+          }, 500);
+        }
+      }
+    }, 100);
+
+    // Clear interval after 10 seconds if not ready
+    setTimeout(() => clearInterval(checkGoogleTranslate), 10000);
+
+    return () => clearInterval(checkGoogleTranslate);
   }, []);
 
   const toggleLanguage = () => {
+    if (!isGoogleTranslateReady) {
+      console.warn('Google Translate belum siap');
+      return;
+    }
+
+    const combo = document.querySelector('.goog-te-combo');
+    if (!combo) {
+      console.warn('Google Translate dropdown tidak ditemukan');
+      return;
+    }
+
     const newLanguage = currentLanguage === "id" ? "en" : "id";
+    
+    // Update state dan localStorage
     setCurrentLanguage(newLanguage);
     localStorage.setItem('language', newLanguage);
-    // Tambahkan logika untuk mengganti bahasa di seluruh aplikasi
-    // Misalnya: window.location.reload() atau dispatch action ke state management
+    
+    // Trigger Google Translate
+    combo.value = newLanguage;
+    combo.dispatchEvent(new Event('change'));
   };
 
   const navItems = [
@@ -59,12 +97,11 @@ export default function Navigation({ activePage = "" }) {
       href: "/", 
       key: "home" 
     },
-    
     { 
-  name: currentLanguage === "id" ? "Booking Lapangan" : "Court Booking", 
-  href: "/booking", 
-  key: "booking" 
-},
+      name: currentLanguage === "id" ? "Booking Lapangan" : "Court Booking", 
+      href: "/booking", 
+      key: "booking" 
+    },
     { 
       name: currentLanguage === "id" ? "Tentang" : "About", 
       href: "/tentang", 
@@ -145,33 +182,39 @@ export default function Navigation({ activePage = "" }) {
                 </Link>
               )}
 
-              {/* Language Switcher */}
+              {/* Language Switcher - Simple Rectangle Flag */}
               <button
                 onClick={toggleLanguage}
-                className="flex items-center gap-1 p-1.5 md:p-2 hover:bg-[#024b8a] rounded transition group"
+                className={`group p-1.5 md:p-2 hover:bg-white/10 rounded-lg transition-all duration-300 ${
+                  !isGoogleTranslateReady ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                }`}
                 title={currentLanguage === "id" ? "Switch to English" : "Ganti ke Bahasa Indonesia"}
+                disabled={!isGoogleTranslateReady}
               >
                 {currentLanguage === "id" ? (
-                  // Indonesia Flag
-                  <div className="w-6 h-6 md:w-7 md:h-7 rounded overflow-hidden shadow-md group-hover:scale-110 transition-transform">
-                    <div className="w-full h-1/2 bg-red-600"></div>
+                  // Indonesia Flag - Simple Rectangle
+                  <div className="w-8 h-6 md:w-10 md:h-7 rounded-md overflow-hidden shadow-lg border-2 border-white/30 group-hover:border-[#ffd22f] group-hover:scale-110 group-hover:shadow-xl transition-all duration-300">
+                    <div className="w-full h-1/2 bg-gradient-to-b from-red-600 to-red-700"></div>
                     <div className="w-full h-1/2 bg-white"></div>
                   </div>
                 ) : (
-                  // USA Flag
-                  <div className="w-6 h-6 md:w-7 md:h-7 rounded overflow-hidden shadow-md group-hover:scale-110 transition-transform">
+                  // USA Flag - Simple Rectangle
+                  <div className="w-8 h-6 md:w-10 md:h-7 rounded-md overflow-hidden shadow-lg border-2 border-white/30 group-hover:border-[#ffd22f] group-hover:scale-110 group-hover:shadow-xl transition-all duration-300">
                     <svg viewBox="0 0 60 30" className="w-full h-full">
-                      {/* Red stripes */}
-                      <rect width="60" height="30" fill="#B22234"/>
+                      <defs>
+                        <linearGradient id="red-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#B92234" />
+                          <stop offset="100%" stopColor="#8B1A2A" />
+                        </linearGradient>
+                      </defs>
+                      <rect width="60" height="30" fill="url(#red-gradient)"/>
                       <rect y="3.85" width="60" height="2.3" fill="white"/>
                       <rect y="7.7" width="60" height="2.3" fill="white"/>
                       <rect y="11.55" width="60" height="2.3" fill="white"/>
                       <rect y="15.4" width="60" height="2.3" fill="white"/>
                       <rect y="19.25" width="60" height="2.3" fill="white"/>
                       <rect y="23.1" width="60" height="2.3" fill="white"/>
-                      {/* Blue canton */}
                       <rect width="24" height="15.4" fill="#3C3B6E"/>
-                      {/* Stars (simplified) */}
                       <g fill="white">
                         <circle cx="3" cy="2" r="0.8"/>
                         <circle cx="7" cy="2" r="0.8"/>
@@ -268,21 +311,30 @@ export default function Navigation({ activePage = "" }) {
             <div className="pt-4 border-t border-[#024b8a]">
               <button
                 onClick={toggleLanguage}
-                className="flex items-center gap-3 text-white hover:text-[#ffd22f] transition w-full py-2"
+                className={`flex items-center gap-3 text-white hover:text-[#ffd22f] transition w-full py-2 ${
+                  !isGoogleTranslateReady ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                disabled={!isGoogleTranslateReady}
               >
                 {currentLanguage === "id" ? (
                   <>
-                    <div className="w-8 h-8 rounded overflow-hidden shadow-md flex-shrink-0">
-                      <div className="w-full h-1/2 bg-red-600"></div>
+                    <div className="w-12 h-8 rounded-md overflow-hidden shadow-lg border-2 border-white/30 flex-shrink-0">
+                      <div className="w-full h-1/2 bg-gradient-to-b from-red-600 to-red-700"></div>
                       <div className="w-full h-1/2 bg-white"></div>
                     </div>
-                    <span className="text-base">Bahasa Indonesia</span>
+                    <span className="text-base font-medium">Bahasa Indonesia</span>
                   </>
                 ) : (
                   <>
-                    <div className="w-8 h-8 rounded overflow-hidden shadow-md flex-shrink-0">
+                    <div className="w-12 h-8 rounded-md overflow-hidden shadow-lg border-2 border-white/30 flex-shrink-0">
                       <svg viewBox="0 0 60 30" className="w-full h-full">
-                        <rect width="60" height="30" fill="#B22234"/>
+                        <defs>
+                          <linearGradient id="mobile-red-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#B92234" />
+                            <stop offset="100%" stopColor="#8B1A2A" />
+                          </linearGradient>
+                        </defs>
+                        <rect width="60" height="30" fill="url(#mobile-red-gradient)"/>
                         <rect y="3.85" width="60" height="2.3" fill="white"/>
                         <rect y="7.7" width="60" height="2.3" fill="white"/>
                         <rect y="11.55" width="60" height="2.3" fill="white"/>
@@ -319,7 +371,7 @@ export default function Navigation({ activePage = "" }) {
                         </g>
                       </svg>
                     </div>
-                    <span className="text-base">English</span>
+                    <span className="text-base font-medium">English</span>
                   </>
                 )}
               </button>

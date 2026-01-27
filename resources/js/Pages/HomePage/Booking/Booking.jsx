@@ -20,7 +20,26 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [mobileStartIndex, setMobileStartIndex] = useState(0);
   const MOBILE_DATES_SHOWN = 5;
-  const [showDatePicker, setShowDatePicker] = useState(false); // ✅ DITAMBAHKAN
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImageIndex, setPreviewImageIndex] = useState(0);
+
+  const openImagePreview = (index) => {
+    setPreviewImageIndex(index);
+    setShowImagePreview(true);
+  };
+
+  const handlePreviewNavigation = (direction) => {
+    if (direction === 'next') {
+      setPreviewImageIndex((prev) =>
+        prev < venue.images.length - 1 ? prev + 1 : 0
+      );
+    } else {
+      setPreviewImageIndex((prev) =>
+        prev > 0 ? prev - 1 : venue.images.length - 1
+      );
+    }
+  };
 
   const [reviewForm, setReviewForm] = useState({
     rating_facilities: 5,
@@ -134,6 +153,23 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
     }
     setShowReviewModal(true);
   };
+
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (showImagePreview) {
+        if (e.key === 'Escape') {
+          setShowImagePreview(false);
+        } else if (e.key === 'ArrowLeft') {
+          handlePreviewNavigation('prev');
+        } else if (e.key === 'ArrowRight') {
+          handlePreviewNavigation('next');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showImagePreview, previewImageIndex]);
 
   // Update date when schedules change (misalnya saat ganti minggu)
   useEffect(() => {
@@ -351,6 +387,22 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
     font-family: 'Montserrat', sans-serif;
   }
   
+/* ✅ TAMBAHKAN ANIMASI INI di dalam <style> */
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-zoom-in {
+  animation: zoomIn 0.3s ease-out;
+}
+
   @keyframes slideDown {
     from {
       opacity: 0;
@@ -489,7 +541,7 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
 
 `}</style>
       <div className="min-h-screen flex flex-col bg-[#013064]">
-        <Navigation activePage="home" />
+        <Navigation activePage="booking" />
 
         {/* Notification Popup - Elegant Design */}
         {notification && (
@@ -551,100 +603,112 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                   {venue.name}
                 </h1>
               </div>
-                                    
-<div className="mb-8 animate-fade-in">
-  <h2 className="text-2xl font-bold text-white mb-6">Pilihan Lapangan The Arena</h2>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {Object.values(venues).map((v, index) => {
-      const isSelected = venue.venue_type === v.venue_type;
-      
-      return (
-        <button
-          key={v.venue_type}
-          onClick={() => {
-            setSelectedTimeSlots([]);
-            router.visit(`/booking?venue=${v.venue_type}&week=${weekOffset}`, {
-              preserveScroll: true,
-            });
-          }}
-          style={{ animationDelay: `${index * 100}ms` }}
-          className={`p-6 rounded-lg relative transition-all duration-300 animate-slide-up min-h-[140px] ${
-            isSelected
-              ? 'bg-[#ffd22f] border-2 border-[#ffd22f] shadow-lg'
-              : 'bg-white border-2 border-white hover:border-[#ffd22f] hover:shadow-md hover:-translate-y-1'
-          }`}
-        >
-          {isSelected && (
-            <div className="absolute top-4 right-4 w-8 h-8 bg-[#013064] rounded-full flex items-center justify-center shadow-md animate-bounce-in">
-              <Check className="w-5 h-5 text-white" />
-            </div>
-          )}
-          
-          <div className="text-left pr-10">
-            <p className={`text-xs uppercase tracking-wide mb-3 font-medium ${
-              isSelected ? 'text-[#013064]/70' : 'text-gray-500'
-            }`}>
-              Lapangan
-            </p>
-            
-            <h3 className={`text-xl font-bold mb-4 ${
-              isSelected ? 'text-[#013064]' : 'text-gray-900'
-            }`}>
-              {v.name.replace('The Arena Basketball ', '')}
-            </h3>
-            
-            <div className="flex items-center gap-2">
-              <MapPin className={`w-4 h-4 flex-shrink-0 ${
-                isSelected ? 'text-[#013064]/60' : 'text-gray-500'
-              }`} />
-              <p className={`text-sm ${
-                isSelected ? 'text-[#013064]/80' : 'text-gray-600'
-              }`}>
-                {v.location}
-              </p>
-            </div>
-          </div>
-        </button>
-      );
-    })}
-  </div>
-</div>
 
-{/* Gambar Gallery - Desktop */}
-<div className="hidden md:flex flex-row gap-4 justify-center items-start mt-8">
-  <div className="flex-shrink-0 w-[550px] animate-slide-in-left">
-    <div className="aspect-square rounded-lg overflow-hidden group">
-      <img
-        src={venue.images?.[0] || '/placeholder.jpg'}
-        alt={`${venue.name} - Main`}
-        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-      />
-    </div>
-  </div>
+              <div className="mb-8 animate-fade-in">
+                <h2 className="text-2xl font-bold text-white mb-6">Pilihan Lapangan The Arena</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.values(venues).map((v, index) => {
+                    const isSelected = venue.venue_type === v.venue_type;
 
-  <div className="grid grid-cols-2 gap-4 w-[550px] h-[550px]">
-    {venue.images?.slice(1, 5).map((img, idx) => (
-      <div 
-        key={idx} 
-        className="w-full h-full rounded-lg overflow-hidden group animate-slide-in-right"
-        style={{ animationDelay: `${idx * 100}ms` }}
-      >
-        <img
-          src={img}
-          alt={`${venue.name} - ${idx + 2}`}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
-      </div>
-    ))}
-  </div>
-</div>
+                    return (
+                      <button
+                        key={v.venue_type}
+                        onClick={() => {
+                          setSelectedTimeSlots([]);
+                          router.visit(`/booking?venue=${v.venue_type}&week=${weekOffset}`, {
+                            preserveScroll: true,
+                          });
+                        }}
+                        style={{ animationDelay: `${index * 100}ms` }}
+                        className={`p-6 rounded-lg relative transition-all duration-300 animate-slide-up min-h-[140px] ${isSelected
+                            ? 'bg-[#ffd22f] border-2 border-[#ffd22f] shadow-lg'
+                            : 'bg-white border-2 border-white hover:border-[#ffd22f] hover:shadow-md hover:-translate-y-1'
+                          }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-4 right-4 w-8 h-8 bg-[#013064] rounded-full flex items-center justify-center shadow-md animate-bounce-in">
+                            <Check className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+
+                        <div className="text-left pr-10">
+                          <p className={`text-xs uppercase tracking-wide mb-3 font-medium ${isSelected ? 'text-[#013064]/70' : 'text-gray-500'
+                            }`}>
+                            Lapangan
+                          </p>
+
+                          <h3 className={`text-xl font-bold mb-4 ${isSelected ? 'text-[#013064]' : 'text-gray-900'
+                            }`}>
+                            {v.name.replace('The Arena Basketball ', '')}
+                          </h3>
+
+                          <div className="flex items-center gap-2">
+                            <MapPin className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-[#013064]/60' : 'text-gray-500'
+                              }`} />
+                            <p className={`text-sm ${isSelected ? 'text-[#013064]/80' : 'text-gray-600'
+                              }`}>
+                              {v.location}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ✅ GANTI SELURUH SECTION INI */}
+              <div className="hidden md:flex flex-row gap-4 justify-center items-start mt-8">
+                <div className="flex-shrink-0 w-[550px] animate-slide-in-left">
+                  <div
+                    className="aspect-square rounded-lg overflow-hidden group cursor-pointer relative"
+                    onClick={() => openImagePreview(0)}
+                  >
+                    <img
+                      src={venue.images?.[0] || '/placeholder.jpg'}
+                      alt={`${venue.name} - Main`}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                      <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-semibold text-lg">
+                        Klik untuk melihat detail
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 w-[550px] h-[550px]">
+                  {venue.images?.slice(1, 5).map((img, idx) => (
+                    <div
+                      key={idx}
+                      className="w-full h-full rounded-lg overflow-hidden group cursor-pointer animate-slide-in-right relative"
+                      style={{ animationDelay: `${idx * 100}ms` }}
+                      onClick={() => openImagePreview(idx + 1)}
+                    >
+                      <img
+                        src={img}
+                        alt={`${venue.name} - ${idx + 2}`}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                        <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-semibold text-sm">
+                          Lihat detail
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
 
               {/* Mobile Slider */}
               <div className="md:hidden animate-fade-in-up">
                 <div className="relative slider-container">
                   {/* Image Container */}
-                  <div className="aspect-square overflow-hidden rounded-lg relative">
+                  <div
+                    className="aspect-square overflow-hidden rounded-lg relative cursor-pointer"
+                    onClick={() => openImagePreview(currentImageIndex)}
+                  >
                     <div
                       className="flex transition-transform duration-500 ease-out h-full"
                       style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
@@ -663,8 +727,11 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                     {/* Navigation Arrows */}
                     {currentImageIndex > 0 && (
                       <button
-                        onClick={() => setCurrentImageIndex(prev => prev - 1)}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition animate-fade-in"
+                        onClick={(e) => {
+                          e.stopPropagation(); // ✅ TAMBAHKAN INI biar gak trigger preview
+                          setCurrentImageIndex(prev => prev - 1);
+                        }}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition animate-fade-in z-10"
                       >
                         <ChevronLeft className="w-6 h-6 text-[#013064]" />
                       </button>
@@ -672,8 +739,11 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
 
                     {currentImageIndex < (venue.images?.length - 1 || 0) && (
                       <button
-                        onClick={() => setCurrentImageIndex(prev => prev + 1)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition animate-fade-in"
+                        onClick={(e) => {
+                          e.stopPropagation(); // ✅ TAMBAHKAN INI biar gak trigger preview
+                          setCurrentImageIndex(prev => prev + 1);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition animate-fade-in z-10"
                       >
                         <ChevronRight className="w-6 h-6 text-[#013064]" />
                       </button>
@@ -682,6 +752,11 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                     {/* Image Counter */}
                     <div className="absolute bottom-4 right-4 bg-[#013064]/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm font-semibold">
                       {currentImageIndex + 1} / {venue.images?.length || 0}
+                    </div>
+
+                    {/* ✅ TAMBAHKAN Hint Text */}
+                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-semibold text-[#013064]">
+                      Tap untuk zoom
                     </div>
                   </div>
 
@@ -737,59 +812,59 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                     )}
                   </div>
 
-   {/* Fasilitas Termasuk */}
-<div>
-  <h2 className="text-2xl font-bold text-white mb-4">Fasilitas</h2>
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-    {venue.facilities
-      ?.filter(facility => 
-        !['Scoreboard', 'Shotclock', 'Sound System', 'Score Board', 'Shot Clock'].includes(facility)
-      )
-      .map((facility, idx) => (
-        <div
-          key={idx}
-          className="flex items-center gap-3 px-4 py-3 border-2 border-white text-white rounded-lg hover:bg-white/10 transition"
-        >
-          <span className="text-sm font-medium">{facility}</span>
-        </div>
-      ))}
-  </div>
-</div>
+                  {/* Fasilitas Termasuk */}
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-4">Fasilitas</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {venue.facilities
+                        ?.filter(facility =>
+                          !['Scoreboard', 'Shotclock', 'Sound System', 'Score Board', 'Shot Clock'].includes(facility)
+                        )
+                        .map((facility, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-3 px-4 py-3 border-2 border-white text-white rounded-lg hover:bg-white/10 transition"
+                          >
+                            <span className="text-sm font-medium">{facility}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
 
-{/* Add-ons Section */}
-<div>
-  <h2 className="text-2xl font-bold text-white mb-2">Add-ons</h2>
-  <p className="text-white/70 text-sm mb-4">Peralatan tambahan yang tidak termasuk dalam paket standar</p>
-  
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-    {[
-      { name: "Score Board", status: "not_included" },
-      { name: "Shot Clock", status: "not_included" },
-      { name: "Sound System", status: "not_included" }
-    ].map((addon, idx) => (
-      <div
-        key={idx}
-        className="flex items-center gap-3 px-4 py-3 border-2 border-white/30 bg-white/5 text-white rounded-lg"
-      >
-    
-        <div className="flex-1">
-          <span className="text-sm font-medium block">{addon.name}</span>
-          <span className="text-xs text-white/50">Not Included</span>
-        </div>
-      </div>
-    ))}
-  </div>
+                  {/* Add-ons Section */}
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-2">Add-ons</h2>
+                    <p className="text-white/70 text-sm mb-4">Peralatan tambahan yang tidak termasuk dalam paket standar</p>
 
-  {/* Info Note */}
-  <div className="mt-4 bg-white/10 border-l-4 border-[#ffd22f] p-4 rounded-lg">
-    <p className="text-white text-sm leading-relaxed">
-      <span className="font-bold text-[#ffd22f]">Catatan: </span>
-      <span className="italic">
-        Untuk menggunakan Score Board, Shot Clock, atau Sound System, silakan hubungi admin untuk informasi ketersediaan dan biaya tambahan.
-      </span>
-    </p>
-  </div>
-</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {[
+                        { name: "Score Board", status: "not_included" },
+                        { name: "Shot Clock", status: "not_included" },
+                        { name: "Sound System", status: "not_included" }
+                      ].map((addon, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-3 px-4 py-3 border-2 border-white/30 bg-white/5 text-white rounded-lg"
+                        >
+
+                          <div className="flex-1">
+                            <span className="text-sm font-medium block">{addon.name}</span>
+                            <span className="text-xs text-white/50">Not Included</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Info Note */}
+                    <div className="mt-4 bg-white/10 border-l-4 border-[#ffd22f] p-4 rounded-lg">
+                      <p className="text-white text-sm leading-relaxed">
+                        <span className="font-bold text-[#ffd22f]">Catatan: </span>
+                        <span className="italic">
+                          Untuk menggunakan Score Board, Shot Clock, atau Sound System, silakan hubungi admin untuk informasi ketersediaan dan biaya tambahan.
+                        </span>
+                      </p>
+                    </div>
+                  </div>
                   {validSchedules.length > 0 && (
                     <>
 
@@ -968,13 +1043,13 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                           </div>
                         )}
                       </div>
-                                              {/* Note Harga Member */}
-                        <div className="mb-4 bg-[#ffd22f]/10 border-l-4 border-[#ffd22f] p-4 rounded-lg">
-                          <p className="text-white text-sm leading-relaxed">
-                            <span className="font-bold text-[#ffd22f]">Info: </span>
-                            <span>Harga yang ditampilkan adalah harga reguler. Member The Arena mendapatkan harga spesial lebih murah untuk setiap sesi booking.</span>
-                          </p>
-                        </div>
+                      {/* Note Harga Member */}
+                      <div className="mb-4 bg-[#ffd22f]/10 border-l-4 border-[#ffd22f] p-4 rounded-lg">
+                        <p className="text-white text-sm leading-relaxed">
+                          <span className="font-bold text-[#ffd22f]">Info: </span>
+                          <span>Harga yang ditampilkan adalah harga reguler. Member The Arena mendapatkan harga spesial lebih murah untuk setiap sesi booking.</span>
+                        </p>
+                      </div>
                     </>
                   )}
                 </div>
@@ -1165,34 +1240,34 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
 
         <Footer />
         <a
-  href="https://wa.me/6281222977985"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="fixed bottom-6 right-6 z-50 group"
-  aria-label="Chat WhatsApp"
->
-  {/* Pulse Ring Effect */}
-  <div className="absolute inset-0 bg-[#25D366] rounded-full animate-pulse-ring"></div>
-  
-  {/* Main Button */}
-  <div className="relative bg-[#25D366] hover:bg-[#20BA5A] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 animate-float">
-    <img
-      src="/images/whatsapp-symbol-logo-svgrepo-com.svg"
-      alt="WhatsApp"
-      className="w-8 h-8 md:w-9 md:h-9"
-    />
-  </div>
-  
-  {/* Tooltip */}
-  <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-    <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-xl">
-      Chat dengan Kami
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
-        <div className="border-8 border-transparent border-l-gray-900"></div>
-      </div>
-    </div>
-  </div>
-</a>
+          href="https://wa.me/6281222977985"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 z-50 group"
+          aria-label="Chat WhatsApp"
+        >
+          {/* Pulse Ring Effect */}
+          <div className="absolute inset-0 bg-[#25D366] rounded-full animate-pulse-ring"></div>
+
+          {/* Main Button */}
+          <div className="relative bg-[#25D366] hover:bg-[#20BA5A] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 animate-float">
+            <img
+              src="/images/whatsapp-symbol-logo-svgrepo-com.svg"
+              alt="WhatsApp"
+              className="w-8 h-8 md:w-9 md:h-9"
+            />
+          </div>
+
+          {/* Tooltip */}
+          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-xl">
+              Chat dengan Kami
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
+                <div className="border-8 border-transparent border-l-gray-900"></div>
+              </div>
+            </div>
+          </div>
+        </a>
       </div>
 
       {/* Modal Konfirmasi Booking */}
@@ -1422,11 +1497,93 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
                 )}
               </button>
             </div>
-            
+
           </div>
-          
+
         </div>
-        
+
+      )}
+      {/* ✅ TAMBAHKAN MODAL PREVIEW INI */}
+      {showImagePreview && (
+        <div
+          className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4"
+          onClick={() => setShowImagePreview(false)}
+        >
+          {/* Close Button */}
+          <button
+            onClick={() => setShowImagePreview(false)}
+            className="absolute top-4 right-4 z-10 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+
+          {/* Image Counter */}
+          <div className="absolute top-4 left-4 z-10 bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
+            {previewImageIndex + 1} / {venue.images?.length || 0}
+          </div>
+
+          {/* Navigation Arrows */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePreviewNavigation('prev');
+            }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition"
+          >
+            <ChevronLeft className="w-6 h-6 text-white" />
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePreviewNavigation('next');
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition"
+          >
+            <ChevronRight className="w-6 h-6 text-white" />
+          </button>
+
+          {/* Main Image */}
+          <div
+            className="max-w-6xl max-h-[90vh] w-full h-full flex items-center justify-center animate-zoom-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={venue.images?.[previewImageIndex]}
+              alt={`${venue.name} - Preview ${previewImageIndex + 1}`}
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            />
+          </div>
+
+          {/* Thumbnail Navigation */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 bg-white/10 backdrop-blur-sm p-2 rounded-full max-w-[90vw] overflow-x-auto">
+            {venue.images?.map((img, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPreviewImageIndex(idx);
+                }}
+                className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition ${idx === previewImageIndex
+                    ? 'border-[#ffd22f] scale-110'
+                    : 'border-white/30 hover:border-white/60'
+                  }`}
+              >
+                <img
+                  src={img}
+                  alt={`Thumbnail ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+
+          {/* Keyboard Hint */}
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 text-white/50 text-xs flex items-center gap-4">
+            <span>← → untuk navigasi</span>
+            <span>ESC untuk tutup</span>
+          </div>
+        </div>
       )}
     </>
   );

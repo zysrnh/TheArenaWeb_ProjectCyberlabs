@@ -18,76 +18,54 @@ class PaymentController extends Controller
     }
 
     /**
-     * ✅ Process payment untuk booking - WITH ENHANCED LOGGING
+     * ✅ Process payment untuk booking - FIXED
      */
     public function process(Request $request, $bookingId)
     {
-        // ✅ LOG 1: START
         Log::info('🎯 ===== PAYMENT PROCESS START =====');
         Log::info('📊 Initial Data', [
             'booking_id' => $bookingId,
             'user_id' => auth('client')->id(),
-            'user_name' => auth('client')->user()?->name,
-            'timestamp' => now(),
-            'request_method' => $request->method(),
-            'request_url' => $request->fullUrl(),
+            'user_name' => auth('client')->user()->name ?? 'Unknown',
+            'timestamp' => now()->format('Y-m-d H:i:s'),
         ]);
 
         try {
-            // ✅ LOG 2: TEST DATABASE CONNECTION
-            Log::info('🔌 Testing database connection...');
-            try {
-                DB::connection()->getPdo();
-                $dbName = DB::connection()->getDatabaseName();
-                Log::info('✅ Database connected successfully', [
-                    'database' => $dbName,
-                    'driver' => config('database.default'),
-                ]);
-            } catch (\Exception $e) {
-                Log::error('❌ DATABASE CONNECTION FAILED', [
-                    'error' => $e->getMessage(),
-                    'driver' => config('database.default'),
-                    'host' => config('database.connections.mysql.host'),
-                    'database' => config('database.connections.mysql.database'),
-                ]);
-                
-                return redirect()->route('profile')->with('error', 'Koneksi database gagal. Silakan hubungi admin.');
-            }
-
-            // ✅ LOG 3: FETCH BOOKING
-            Log::info('📦 Fetching booking data...');
             $booking = Booking::with('client')->findOrFail($bookingId);
             
             Log::info('✅ Booking found', [
                 'booking_id' => $booking->id,
                 'client_id' => $booking->client_id,
+                'client_id_type' => gettype($booking->client_id),
+                'auth_id' => auth('client')->id(),
+                'auth_id_type' => gettype(auth('client')->id()),
                 'total_price' => $booking->total_price,
                 'payment_status' => $booking->payment_status,
                 'is_paid' => $booking->is_paid,
             ]);
 
-            // ✅ LOG 4: AUTH CHECK
-           if ((int)$booking->client_id !== auth('client')->id()) {
-                Log::warning('⚠️ UNAUTHORIZED ACCESS ATTEMPT', [
-                    'booking_id' => $bookingId,
+            // 🔒 AUTHORIZATION CHECK - FIXED dengan type casting
+            if ((int)$booking->client_id !== (int)auth('client')->id()) {
+                Log::warning('🚫 Authorization failed', [
                     'booking_client_id' => $booking->client_id,
-                    'current_user_id' => auth('client')->id(),
+                    'auth_client_id' => auth('client')->id(),
+                    'after_casting_match' => ((int)$booking->client_id === (int)auth('client')->id()),
                 ]);
-                return redirect()->route('profile')->with('error', 'Unauthorized');
+                return redirect()->route('profile')->with('error', 'Unauthorized access to this booking');
             }
             Log::info('✅ Authorization passed');
 
-            // ✅ LOG 5: PAYMENT STATUS CHECK
+            // ✅ CHECK IF ALREADY PAID
             if ($booking->isPaid()) {
                 Log::info('ℹ️ Booking already paid', [
-                    'booking_id' => $bookingId,
-                    'paid_at' => $booking->paid_at,
+                    'payment_status' => $booking->payment_status,
+                    'is_paid' => $booking->is_paid,
                 ]);
                 return redirect()->route('profile')->with('info', 'Booking ini sudah dibayar');
             }
             Log::info('✅ Payment status check passed');
 
-            // ✅ LOG 6: PREPARE PAYMENT DATA
+            // 📝 PREPARE PAYMENT DATA
             $orderId = (string) $booking->id;
             $amount = (int) $booking->total_price;
 
@@ -121,73 +99,70 @@ class PaymentController extends Controller
                 'customer'     => $customerData['name'],
                 'customer_email' => $customerData['email'],
                 'venue_type'   => $booking->venue_type,
-                'booking_date' => $booking->booking_date,
-                'items_count'  => count($items),
+                'booking_date' => $booking->booking_date->format('Y-m-d'),
             ]);
 
-            // ✅ LOG 7: CALL FASPAY SERVICE
             Log::info('📞 Calling Faspay service...');
             $result = $this->faspay->createPayment($orderId, $amount, $customerData, $items);
-            
+
             Log::info('📬 Faspay service response', [
                 'success' => $result['success'] ?? false,
                 'has_redirect_url' => isset($result['redirect_url']),
                 'has_bill_no' => isset($result['bill_no']),
                 'has_trx_id' => isset($result['trx_id']),
-                'result_keys' => array_keys($result),
+                'redirect_url' => $result['redirect_url'] ?? 'not_set',
             ]);
 
+            // ✅ CHECK SUCCESS AND REDIRECT URL
             if ($result['success'] && isset($result['redirect_url'])) {
-                // ✅ LOG 8: UPDATE BOOKING
-                Log::info('💾 Updating booking with payment info...');
                 
+                Log::info('💾 Updating booking with payment info...');
                 $booking->update([
                     'bill_no'        => $result['bill_no'],
                     'trx_id'         => $result['trx_id'] ?? null,
                     'payment_status' => 'pending',
                 ]);
 
-                $booking->refresh();
-                
                 Log::info('✅✅✅ BOOKING UPDATED SUCCESSFULLY', [
                     'booking_id' => $bookingId,
-                    'bill_no'    => $booking->bill_no,
-                    'trx_id'     => $booking->trx_id,
-                    'payment_status' => $booking->payment_status,
-                    'redirect'   => $result['redirect_url'],
+                    'bill_no'    => $result['bill_no'],
+                    'trx_id'     => $result['trx_id'] ?? null,
+                    'payment_status' => 'pending',
+                    'redirect_url'   => $result['redirect_url'],
                 ]);
-                
-                Log::info('🚀 Redirecting to Faspay...');
+
+                Log::info('🚀 Redirecting to Faspay payment gateway...');
                 Log::info('🎯 ===== PAYMENT PROCESS END (SUCCESS) =====');
 
+                // ✅ MULTIPLE REDIRECT METHODS - Try all
+                // Method 1: Direct away redirect (best for external URLs)
                 return redirect()->away($result['redirect_url']);
+                
+                // Alternative methods if above doesn't work:
+                // Method 2: Response redirect
+                // return response()->redirectTo($result['redirect_url']);
+                
+                // Method 3: Inertia external redirect (if using Inertia)
+                // return \Inertia\Inertia::location($result['redirect_url']);
+                
+                // Method 4: Manual header redirect
+                // return response('', 302)->header('Location', $result['redirect_url']);
             }
 
-            // ✅ LOG 9: FASPAY ERROR
+            // ❌ PAYMENT CREATION FAILED
             $errorMessage = $result['error'] ?? $result['technical_error'] ?? 'Unknown error';
 
-            Log::error('❌ FASPAY PAYMENT CREATION FAILED', [
+            Log::error('❌ Faspay Payment Creation Failed', [
                 'booking_id' => $bookingId,
                 'error'      => $errorMessage,
-                'result'     => $result,
+                'full_result' => $result,
             ]);
 
-            Log::info('🎯 ===== PAYMENT PROCESS END (FASPAY ERROR) =====');
-
+            Log::info('🎯 ===== PAYMENT PROCESS END (FAILED) =====');
             return redirect()->route('profile')->with('error', 'Gagal membuat pembayaran: ' . $errorMessage);
-            
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('❌ BOOKING NOT FOUND', [
-                'booking_id' => $bookingId,
-                'message' => $e->getMessage(),
-            ]);
-            
-            Log::info('🎯 ===== PAYMENT PROCESS END (NOT FOUND) =====');
-            
-            return redirect()->route('profile')->with('error', 'Booking tidak ditemukan');
-            
+
         } catch (\Exception $e) {
-            Log::error('💥💥💥 PAYMENT PROCESS EXCEPTION', [
+            Log::error('💥 Payment Process Exception', [
                 'booking_id' => $bookingId,
                 'message'    => $e->getMessage(),
                 'file'       => $e->getFile(),
@@ -196,7 +171,6 @@ class PaymentController extends Controller
             ]);
 
             Log::info('🎯 ===== PAYMENT PROCESS END (EXCEPTION) =====');
-
             return redirect()->route('profile')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
@@ -218,7 +192,6 @@ class PaymentController extends Controller
         ]);
 
         try {
-            // ⭐ VALIDATE INPUT
             $validated = $request->validate([
                 'bill_no' => 'required|string|max:100',
                 'bill_total' => 'required|numeric',
@@ -232,7 +205,6 @@ class PaymentController extends Controller
                 'signature' => 'required|string|max:255',
             ]);
 
-            // Extract validated data
             $billNo            = $validated['bill_no'];
             $billTotal         = $validated['bill_total'];
             $paymentStatusCode = $validated['payment_status_code'];
@@ -250,23 +222,14 @@ class PaymentController extends Controller
                 'payment_status_code'  => $paymentStatusCode,
                 'payment_channel'      => $paymentChannel,
                 'trx_id'               => $trxId,
-                'signature'            => $signature,
             ]);
 
-            // Verify signature
             $signatureValid = $this->faspay->verifySignature($request->all());
 
-            Log::info('🔐 Signature Check', [
-                'valid' => $signatureValid,
-                'received' => $signature,
-            ]);
+            Log::info('🔐 Signature Check', ['valid' => $signatureValid]);
 
             if (!$signatureValid) {
-                Log::error('❌ INVALID SIGNATURE', [
-                    'bill_no' => $billNo,
-                    'bill_total' => $billTotal,
-                    'received_signature' => $signature,
-                ]);
+                Log::error('❌ INVALID SIGNATURE', ['bill_no' => $billNo]);
                 
                 return response()->json([
                     'response' => 'Payment Notification',
@@ -276,26 +239,17 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            // Map payment status
             $paymentStatus = $this->mapPaymentStatus($paymentStatusCode);
 
-            Log::info('📋 Status Mapping', [
-                'code' => $paymentStatusCode,
-                'mapped' => $paymentStatus,
-            ]);
-
-            // START TRANSACTION WITH PESSIMISTIC LOCK
             DB::beginTransaction();
 
             try {
-                // 🔒 PESSIMISTIC LOCK
                 $booking = Booking::where('bill_no', $billNo)
                     ->lockForUpdate()
                     ->first();
 
                 if (!$booking) {
                     DB::rollBack();
-                    
                     Log::error('❌ BOOKING NOT FOUND', ['bill_no' => $billNo]);
                     
                     return response()->json([
@@ -306,18 +260,14 @@ class PaymentController extends Controller
                     ], 404);
                 }
 
-                // ⭐ IDEMPOTENCY CHECK
                 if ($booking->payment_status === 'paid' && $booking->trx_id === $trxId) {
                     DB::rollBack();
                     
                     Log::info('⚠️ DUPLICATE CALLBACK - Already processed', [
                         'bill_no' => $billNo,
                         'trx_id' => $trxId,
-                        'existing_payment_status' => $booking->payment_status,
-                        'existing_paid_at' => $booking->paid_at,
                     ]);
                     
-                    // Return success untuk prevent Faspay retry
                     return response()->json([
                         'response' => 'Payment Notification',
                         'trx_id' => $trxId,
@@ -325,36 +275,24 @@ class PaymentController extends Controller
                         'merchant' => 'The Arena',
                         'bill_no' => $billNo,
                         'response_code' => '00',
-                        'response_desc' => 'Already processed (idempotent)',
+                        'response_desc' => 'Already processed',
                         'response_date' => now()->format('Y-m-d H:i:s'),
                     ], 200);
                 }
 
-                // Validate amount
                 if ($billTotal && (int)$billTotal !== (int)$booking->total_price) {
                     Log::warning('⚠️ AMOUNT MISMATCH', [
-                        'bill_no' => $billNo,
                         'expected' => $booking->total_price,
                         'received' => $billTotal,
                     ]);
                 }
 
-                Log::info('🔍 BEFORE UPDATE', [
-                    'booking_id' => $booking->id,
-                    'current_payment_status' => $booking->payment_status,
-                    'current_is_paid' => $booking->is_paid,
-                    'current_status' => $booking->status,
-                ]);
-
-                // Update booking with all Faspay fields
                 $booking->trx_id = $trxId;
                 $booking->payment_method = $paymentChannel ?? 'Unknown';
                 $booking->payment_status = $paymentStatus;
                 $booking->is_paid = ($paymentStatus === 'paid') ? 1 : 0;
                 $booking->paid_at = ($paymentStatus === 'paid') ? now() : null;
                 $booking->status = ($paymentStatus === 'paid') ? 'confirmed' : $booking->status;
-                
-                // Save additional Faspay data
                 $booking->payment_reff = $paymentReff;
                 $booking->payment_date = $paymentDate ? \Carbon\Carbon::parse($paymentDate) : null;
                 $booking->payment_status_code = $paymentStatusCode;
@@ -362,30 +300,16 @@ class PaymentController extends Controller
                 $booking->payment_channel_uid = $paymentChannelUid;
                 $booking->payment_channel = $paymentChannel;
                 
-                $saved = $booking->save();
-
-                Log::info('💾 Save Result', ['saved' => $saved]);
+                $booking->save();
 
                 DB::commit();
 
-                // Refresh and verify
                 $booking = $booking->fresh();
 
-                Log::info('✅✅✅ AFTER UPDATE SUCCESS ✅✅✅', [
-                    'booking_id'           => $booking->id,
-                    'bill_no'              => $booking->bill_no,
-                    'trx_id'               => $booking->trx_id,
-                    'payment_status'       => $booking->payment_status,
-                    'is_paid'              => $booking->is_paid,
-                    'status'               => $booking->status,
-                    'paid_at'              => $booking->paid_at,
-                    'payment_reff'         => $booking->payment_reff,
-                    'payment_date'         => $booking->payment_date,
-                    'payment_status_code'  => $booking->payment_status_code,
-                    'payment_status_desc'  => $booking->payment_status_desc,
-                    'payment_channel_uid'  => $booking->payment_channel_uid,
-                    'payment_channel'      => $booking->payment_channel,
-                    'isPaid_method'        => $booking->isPaid(),
+                Log::info('✅✅✅ CALLBACK UPDATE SUCCESS', [
+                    'booking_id' => $booking->id,
+                    'payment_status' => $booking->payment_status,
+                    'is_paid' => $booking->is_paid,
                 ]);
 
                 Log::info('🔔 ===== FASPAY CALLBACK END (SUCCESS) =====');
@@ -407,12 +331,7 @@ class PaymentController extends Controller
             }
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('❌ VALIDATION FAILED', [
-                'errors' => $e->errors(),
-                'input' => $request->all(),
-            ]);
-
-            Log::info('🔔 ===== FASPAY CALLBACK END (VALIDATION ERROR) =====');
+            Log::error('❌ VALIDATION FAILED', ['errors' => $e->errors()]);
 
             return response()->json([
                 'response' => 'Payment Notification',
@@ -426,12 +345,9 @@ class PaymentController extends Controller
 
             Log::error('💥 CALLBACK ERROR', [
                 'message' => $e->getMessage(),
-                'file'    => $e->getFile(),
-                'line'    => $e->getLine(),
-                'trace'   => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
-
-            Log::info('🔔 ===== FASPAY CALLBACK END (ERROR) =====');
 
             return response()->json([
                 'response' => 'Payment Notification',
@@ -443,7 +359,7 @@ class PaymentController extends Controller
     }
 
     /**
-     * ✅ Return URL (user kembali dari Faspay) - UPDATED WITH CHANNEL INFO
+     * ✅ Return URL (user kembali dari Faspay)
      */
     public function return(Request $request)
     {
@@ -451,13 +367,9 @@ class PaymentController extends Controller
             $billNo = $request->query('bill_no');
             $status = $request->query('status');
             $trxId = $request->query('trx_id');
-            $billTotal = $request->query('bill_total');
             $paymentReff = $request->query('payment_reff');
             $paymentDate = $request->query('payment_date');
             $signature = $request->query('signature');
-            $merchantId = $request->query('merchant_id');
-            
-            // ⭐ NEW: Extract payment channel info
             $bankUserName = $request->query('bank_user_name');
             $paymentChannel = $request->query('payment_channel');
             $paymentChannelUid = $request->query('payment_channel_uid');
@@ -467,8 +379,6 @@ class PaymentController extends Controller
                 'status' => $status,
                 'trx_id' => $trxId,
                 'payment_channel' => $paymentChannel,
-                'bank_user_name' => $bankUserName,
-                'query' => $request->query(),
             ]);
 
             if (!$billNo) {
@@ -481,92 +391,50 @@ class PaymentController extends Controller
                 return redirect()->route('profile')->with('error', 'Booking tidak ditemukan');
             }
 
-            if ($booking->client_id !== auth('client')->id()) {
+            // Fix: Type casting untuk authorization
+            if ((int)$booking->client_id !== (int)auth('client')->id()) {
                 return redirect()->route('profile')->with('error', 'Unauthorized');
             }
 
-            // ✅ FALLBACK: Jika status=2 (paid) tapi callback belum masuk
+            // FALLBACK: Update dari return URL jika callback belum masuk
             if ($status === '2' && $booking->payment_status !== 'paid') {
-                Log::warning('⚠️ FALLBACK: Payment success di return URL tapi callback belum masuk', [
-                    'bill_no' => $billNo,
-                    'status' => $status,
-                    'booking_id' => $booking->id,
-                    'trx_id' => $trxId,
-                ]);
+                Log::warning('⚠️ FALLBACK: Updating from return URL');
                 
                 $signatureValid = $this->faspay->verifySignature($request->query());
                 
-                if (!$signatureValid) {
-                    Log::error('❌ FALLBACK: Invalid signature on return URL', [
-                        'bill_no' => $billNo,
-                        'signature' => $signature,
-                        'all_data' => $request->query(),
-                    ]);
-                    
-                    return redirect()->route('profile', ['tab' => 'jadwal-booking'])
-                        ->with('warning', '⚠️ Pembayaran sedang diverifikasi. Mohon tunggu beberapa saat atau refresh halaman.');
-                }
-
-                Log::info('✅ FALLBACK: Signature valid, proceeding with update', [
-                    'bill_no' => $billNo,
-                    'trx_id' => $trxId,
-                ]);
-
-                // Update booking langsung dari return URL (signature sudah valid)
-                DB::beginTransaction();
-                try {
-                    $booking->payment_status = 'paid';
-                    $booking->is_paid = true;
-                    $booking->paid_at = now();
-                    $booking->status = 'confirmed';
-                    $booking->trx_id = $trxId;
-                    $booking->payment_reff = $paymentReff;
-                    $booking->payment_date = $paymentDate ? \Carbon\Carbon::parse($paymentDate) : null;
-                    $booking->payment_status_code = '2';
-                    $booking->payment_status_desc = 'Payment Sukses';
-                    
-                    // ⭐ NEW: Set payment channel info dengan fallback
-                    $booking->payment_channel = $paymentChannel ?? 'Faspay Xpress';
-                    $booking->payment_channel_uid = $paymentChannelUid ?? $bankUserName ?? $trxId;
-                    $booking->payment_method = $paymentChannel ?? 'Faspay';
-                    
-                    $booking->save();
-                    
-                    DB::commit();
-                    
-                    Log::info('✅ FALLBACK: Payment updated from return URL (signature verified)', [
-                        'booking_id' => $booking->id,
-                        'bill_no' => $billNo,
-                        'trx_id' => $trxId,
-                        'payment_channel' => $booking->payment_channel,
-                        'payment_channel_uid' => $booking->payment_channel_uid,
-                        'payment_method' => $booking->payment_method,
-                        'source' => 'return_url_fallback',
-                    ]);
-                } catch (\Exception $e) {
-                    DB::rollBack();
-                    
-                    Log::error('❌ FALLBACK: Failed to update from return URL', [
-                        'booking_id' => $booking->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                    
-                    return redirect()->route('profile', ['tab' => 'jadwal-booking'])
-                        ->with('error', 'Gagal memproses pembayaran. Silakan hubungi admin.');
+                if ($signatureValid) {
+                    DB::beginTransaction();
+                    try {
+                        $booking->payment_status = 'paid';
+                        $booking->is_paid = true;
+                        $booking->paid_at = now();
+                        $booking->status = 'confirmed';
+                        $booking->trx_id = $trxId;
+                        $booking->payment_reff = $paymentReff;
+                        $booking->payment_date = $paymentDate ? \Carbon\Carbon::parse($paymentDate) : null;
+                        $booking->payment_status_code = '2';
+                        $booking->payment_status_desc = 'Payment Sukses';
+                        $booking->payment_channel = $paymentChannel ?? 'Faspay Xpress';
+                        $booking->payment_channel_uid = $paymentChannelUid ?? $bankUserName ?? $trxId;
+                        $booking->payment_method = $paymentChannel ?? 'Faspay';
+                        
+                        $booking->save();
+                        DB::commit();
+                        
+                        Log::info('✅ FALLBACK: Payment updated from return URL');
+                    } catch (\Exception $e) {
+                        DB::rollBack();
+                        Log::error('❌ FALLBACK failed', ['error' => $e->getMessage()]);
+                    }
                 }
             }
 
-            // Refresh booking untuk dapat data terbaru
             $booking = $booking->fresh();
             $isPaid = $booking->isPaid();
 
-            Log::info('📊 Payment Status on Return', [
-                'booking_id' => $booking->id,
-                'bill_no' => $booking->bill_no,
+            Log::info('📊 Return Status', [
                 'is_paid' => $isPaid,
                 'payment_status' => $booking->payment_status,
-                'payment_channel' => $booking->payment_channel,
-                'status' => $booking->status,
             ]);
 
             if ($isPaid) {
@@ -574,7 +442,6 @@ class PaymentController extends Controller
                     ->with('success', '✅ Pembayaran berhasil! Booking Anda telah dikonfirmasi.');
             }
 
-            // Jika belum paid, tunggu callback
             return redirect()->route('profile', ['tab' => 'jadwal-booking'])
                 ->with('info', '⏳ Pembayaran sedang diproses. Refresh halaman dalam beberapa saat.');
                 
@@ -615,27 +482,14 @@ class PaymentController extends Controller
 
             $trxId = $validated['transaction_id'];
 
-            Log::info('🔍 Check Payment Status Request', [
-                'transaction_id' => $trxId,
-                'ip' => $request->ip(),
-            ]);
-
             $booking = Booking::where('trx_id', $trxId)->first();
 
             if (!$booking) {
-                Log::warning('❌ Transaction not found', ['trx_id' => $trxId]);
-                
                 return response()->json([
                     'success' => false,
                     'error' => 'Transaction not found'
                 ], 404);
             }
-
-            Log::info('✅ Transaction found', [
-                'booking_id' => $booking->id,
-                'bill_no' => $booking->bill_no,
-                'payment_status' => $booking->payment_status,
-            ]);
 
             return response()->json([
                 'success' => true,
@@ -645,21 +499,11 @@ class PaymentController extends Controller
                 'booking_status' => $booking->status,
                 'total_amount' => $booking->total_price,
                 'booking_date' => $booking->booking_date,
-                'created_at' => $booking->created_at,
                 'is_paid' => $booking->isPaid(),
             ], 200);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Validation failed',
-                'details' => $e->errors()
-            ], 422);
         } catch (\Exception $e) {
-            Log::error('💥 Check status error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error('💥 Check status error', ['message' => $e->getMessage()]);
             
             return response()->json([
                 'success' => false,
