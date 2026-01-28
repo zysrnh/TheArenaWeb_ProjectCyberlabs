@@ -6,14 +6,26 @@ import Footer from "../../Components/Footer";
 
 export default function MatchPage({ auth, filters, dates, matches, today, weekInfo, leagues, activeEventNotif = null }) {
   const [selectedYear, setSelectedYear] = useState(filters.year || '');
-  const [selectedLeague, setSelectedLeague] = useState(filters.league);
-  const [selectedSeries, setSelectedSeries] = useState(filters.series);
-  const [selectedRegion, setSelectedRegion] = useState(filters.region);
-  const [selectedDate, setSelectedDate] = useState(filters.selectedDate);
+  const [selectedLeague, setSelectedLeague] = useState(filters.league || '');
+  const [selectedSeries, setSelectedSeries] = useState(filters.series || '');
+  const [selectedRegion, setSelectedRegion] = useState(filters.region || '');
+  const [selectedDate, setSelectedDate] = useState(filters.selectedDate || null);
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const [weekOffset, setWeekOffset] = useState(filters.week || 0);
   const [selectedMonth, setSelectedMonth] = useState(filters.month || '');
   const [showEventNotifPopup, setShowEventNotifPopup] = useState(false);
+
+  // ✅ SYNC STATE WITH PROPS
+  useEffect(() => {
+    setSelectedYear(filters.year || '');
+    setSelectedLeague(filters.league || '');
+    setSelectedSeries(filters.series || '');
+    setSelectedRegion(filters.region || '');
+    setSelectedDate(filters.selectedDate || null);
+    setSearchQuery(filters.search || '');
+    setWeekOffset(filters.week || 0);
+    setSelectedMonth(filters.month || '');
+  }, [filters]);
 
   // ✅ SHOW EVENT NOTIF POPUP
   useEffect(() => {
@@ -22,20 +34,60 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     }
   }, [activeEventNotif]);
 
+  // ✅ CRITICAL FIX: Don't send empty string parameters
   const handleFilterChange = (filterName, value) => {
-    const params = {
-      league: filterName === 'league' ? value : selectedLeague,
-      series: filterName === 'series' ? value : selectedSeries,
-      region: filterName === 'region' ? value : selectedRegion,
-      date: filterName === 'date' ? value : selectedDate,
-      search: searchQuery,
-      week: filterName === 'week' ? value : weekOffset,
-      month: filterName === 'month' ? value : selectedMonth,
-    };
+    const params = {};
 
-    const yearValue = filterName === 'year' ? value : selectedYear;
-    if (yearValue && yearValue !== '') {
-      params.year = yearValue;
+    // Build base params - ONLY if they have values
+    if (selectedLeague && selectedLeague !== '') params.league = selectedLeague;
+    if (selectedSeries && selectedSeries !== '') params.series = selectedSeries;
+    if (selectedRegion && selectedRegion !== '') params.region = selectedRegion;
+    if (searchQuery && searchQuery !== '') params.search = searchQuery;
+    if (selectedYear && selectedYear !== '') params.year = selectedYear;
+
+    // Apply the changed filter
+    if (filterName === 'year') {
+      if (value && value !== '') {
+        params.year = value;
+      } else {
+        delete params.year; // Remove year if empty
+      }
+    } else if (filterName === 'league') {
+      if (value && value !== '') {
+        params.league = value;
+      } else {
+        delete params.league;
+      }
+    } else if (filterName === 'series') {
+      if (value && value !== '') {
+        params.series = value;
+      } else {
+        delete params.series;
+      }
+    } else if (filterName === 'region') {
+      if (value && value !== '') {
+        params.region = value;
+      } else {
+        delete params.region;
+      }
+    }
+
+    // Date navigation logic
+    if (filterName === 'date') {
+      params.date = value;
+    } else if (filterName === 'week') {
+      params.week = value;
+    } else if (filterName === 'month') {
+      params.month = value;
+    } else {
+      // Preserve current date state for other filters
+      if (selectedDate) {
+        params.date = selectedDate;
+      } else if (weekOffset !== 0) {
+        params.week = weekOffset;
+      } else if (selectedMonth) {
+        params.month = selectedMonth;
+      }
     }
 
     router.get('/jadwal-hasil', params, {
@@ -45,45 +97,13 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
   };
 
   const handleWeekChange = (offset) => {
-    setWeekOffset(offset);
-    setSelectedDate(null);
-    setSelectedMonth('');
-    
-    const params = {
-      league: selectedLeague,
-      series: selectedSeries,
-      region: selectedRegion,
-      search: searchQuery,
-      week: offset,
-    };
+    const params = { week: offset };
 
-    if (selectedYear && selectedYear !== '') {
-      params.year = selectedYear;
-    }
-
-    router.get('/jadwal-hasil', params, {
-      preserveState: true,
-      preserveScroll: true,
-    });
-  };
-
-  const handleMonthChange = (e) => {
-    const month = e.target.value;
-    setSelectedMonth(month);
-    setWeekOffset(0);
-    setSelectedDate(null);
-    
-    const params = {
-      league: selectedLeague,
-      series: selectedSeries,
-      region: selectedRegion,
-      search: searchQuery,
-      month: month,
-    };
-
-    if (selectedYear && selectedYear !== '') {
-      params.year = selectedYear;
-    }
+    if (selectedLeague && selectedLeague !== '') params.league = selectedLeague;
+    if (selectedSeries && selectedSeries !== '') params.series = selectedSeries;
+    if (selectedRegion && selectedRegion !== '') params.region = selectedRegion;
+    if (selectedYear && selectedYear !== '') params.year = selectedYear;
+    if (searchQuery && searchQuery !== '') params.search = searchQuery;
 
     router.get('/jadwal-hasil', params, {
       preserveState: true,
@@ -93,21 +113,15 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
 
   const handleDatePickerChange = (e) => {
     const date = e.target.value;
-    setSelectedDate(date);
-    setSelectedMonth('');
-    setWeekOffset(0);
+    if (!date) return;
     
-    const params = {
-      league: selectedLeague,
-      series: selectedSeries,
-      region: selectedRegion,
-      search: searchQuery,
-      date: date,
-    };
+    const params = { date: date };
 
-    if (selectedYear && selectedYear !== '') {
-      params.year = selectedYear;
-    }
+    if (selectedLeague && selectedLeague !== '') params.league = selectedLeague;
+    if (selectedSeries && selectedSeries !== '') params.series = selectedSeries;
+    if (selectedRegion && selectedRegion !== '') params.region = selectedRegion;
+    if (selectedYear && selectedYear !== '') params.year = selectedYear;
+    if (searchQuery && searchQuery !== '') params.search = searchQuery;
 
     router.get('/jadwal-hasil', params, {
       preserveState: true,
@@ -116,20 +130,13 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
   };
 
   const resetToCurrentMonth = () => {
-    setSelectedMonth('');
-    setWeekOffset(0);
-    setSelectedDate(null);
+    const params = {};
     
-    const params = {
-      league: selectedLeague,
-      series: selectedSeries,
-      region: selectedRegion,
-      search: searchQuery,
-    };
-
-    if (selectedYear && selectedYear !== '') {
-      params.year = selectedYear;
-    }
+    if (selectedLeague && selectedLeague !== '') params.league = selectedLeague;
+    if (selectedSeries && selectedSeries !== '') params.series = selectedSeries;
+    if (selectedRegion && selectedRegion !== '') params.region = selectedRegion;
+    if (selectedYear && selectedYear !== '') params.year = selectedYear;
+    if (searchQuery && searchQuery !== '') params.search = searchQuery;
 
     router.get('/jadwal-hasil', params, {
       preserveState: true,
@@ -140,18 +147,20 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
   const handleSearch = (e) => {
     e.preventDefault();
 
-    const params = {
-      league: selectedLeague,
-      series: selectedSeries,
-      region: selectedRegion,
-      date: selectedDate,
-      search: searchQuery,
-      week: weekOffset,
-      month: selectedMonth,
-    };
-
-    if (selectedYear && selectedYear !== '') {
-      params.year = selectedYear;
+    const params = {};
+    
+    if (searchQuery && searchQuery !== '') params.search = searchQuery;
+    if (selectedLeague && selectedLeague !== '') params.league = selectedLeague;
+    if (selectedSeries && selectedSeries !== '') params.series = selectedSeries;
+    if (selectedRegion && selectedRegion !== '') params.region = selectedRegion;
+    if (selectedYear && selectedYear !== '') params.year = selectedYear;
+    
+    if (selectedDate) {
+      params.date = selectedDate;
+    } else if (weekOffset !== 0) {
+      params.week = weekOffset;
+    } else if (selectedMonth) {
+      params.month = selectedMonth;
     }
 
     router.get('/jadwal-hasil', params, {
@@ -212,34 +221,33 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
         input[type="date"] {
           color-scheme: dark;
         }
-                @keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
 
-@keyframes pulse-ring {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-}
+        @keyframes pulse-ring {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
+        }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
 
-.animate-pulse-ring {
-  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
+        .animate-pulse-ring {
+          animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
       `}</style>
       <div className="min-h-screen flex flex-col bg-[#013064]">
         <Navigation activePage="jadwal-hasil" />
@@ -263,10 +271,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                 <div className="relative">
                   <select
                     value={selectedYear}
-                    onChange={(e) => {
-                      setSelectedYear(e.target.value);
-                      handleFilterChange('year', e.target.value);
-                    }}
+                    onChange={(e) => handleFilterChange('year', e.target.value)}
                     className="bg-[#ffd22f] text-[#013064] px-6 py-2.5 text-sm md:text-base font-semibold cursor-pointer appearance-none pr-10 rounded"
                   >
                     <option value="">Semua Tahun</option>
@@ -281,10 +286,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                 <div className="relative">
                   <select
                     value={selectedLeague}
-                    onChange={(e) => {
-                      setSelectedLeague(e.target.value);
-                      handleFilterChange('league', e.target.value);
-                    }}
+                    onChange={(e) => handleFilterChange('league', e.target.value)}
                     className="bg-[#ffd22f] text-[#013064] px-6 py-2.5 text-sm md:text-base font-semibold cursor-pointer appearance-none pr-10 rounded"
                   >
                     <option value="">Semua Liga</option>
@@ -299,10 +301,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                 <div className="relative">
                   <select
                     value={selectedSeries}
-                    onChange={(e) => {
-                      setSelectedSeries(e.target.value);
-                      handleFilterChange('series', e.target.value);
-                    }}
+                    onChange={(e) => handleFilterChange('series', e.target.value)}
                     className="bg-[#ffd22f] text-[#013064] px-6 py-2.5 text-sm md:text-base font-semibold cursor-pointer appearance-none pr-10 rounded"
                   >
                     <option value="">Semua Series</option>
@@ -317,10 +316,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                 <div className="relative">
                   <select
                     value={selectedRegion}
-                    onChange={(e) => {
-                      setSelectedRegion(e.target.value);
-                      handleFilterChange('region', e.target.value);
-                    }}
+                    onChange={(e) => handleFilterChange('region', e.target.value)}
                     className="bg-[#ffd22f] text-[#013064] px-6 py-2.5 text-sm md:text-base font-semibold cursor-pointer appearance-none pr-10 rounded"
                   >
                     <option value="">Semua Regional</option>
@@ -417,12 +413,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                 {dates.map((date) => (
                   <div
                     key={date.full_date}
-                    onClick={() => {
-                      setSelectedDate(date.full_date);
-                      setWeekOffset(0);
-                      setSelectedMonth('');
-                      handleFilterChange('date', date.full_date);
-                    }}
+                    onClick={() => handleFilterChange('date', date.full_date)}
                     className={`cursor-pointer transition-all overflow-hidden ${selectedDate === date.full_date
                         ? 'ring-4 ring-[#ffd22f] shadow-lg'
                         : 'hover:ring-2 hover:ring-white/50'
@@ -595,202 +586,31 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
           </div>
         </div>
 
-        {/* ✅ EVENT NOTIF POPUP MODAL */}
-        {showEventNotifPopup && activeEventNotif && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
-            {/* Backdrop */}
-            <div 
-              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-              onClick={handleCloseEventNotifPopup}
+        <Footer />
+        <a
+          href="https://wa.me/6281222977985"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 z-50 group"
+          aria-label="Chat WhatsApp"
+        >
+          <div className="absolute inset-0 bg-[#25D366] rounded-full animate-pulse-ring"></div>
+          <div className="relative bg-[#25D366] hover:bg-[#20BA5A] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 animate-float">
+            <img
+              src="/images/whatsapp-symbol-logo-svgrepo-com.svg"
+              alt="WhatsApp"
+              className="w-8 h-8 md:w-9 md:h-9"
             />
-            
-            {/* Modal Content */}
-            <div className="relative bg-white rounded-xl max-w-sm w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-modal-appear border-2 border-gray-800">
-              {/* Close Button */}
-              <button
-                onClick={handleCloseEventNotifPopup}
-                className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 hover:scale-110"
-              >
-                <X className="w-5 h-5 text-gray-800" strokeWidth={3} />
-              </button>
-
-              {/* Header */}
-              <div className="bg-white px-5 py-4 text-center border-b-2 border-gray-800 sticky top-0 z-20">
-                <h2 className="text-base font-black text-gray-900 uppercase tracking-tight mb-1">
-                  {activeEventNotif.title}
-                </h2>
-                <p className="text-[10px] font-bold text-gray-700 uppercase tracking-wide leading-tight">
-                  Amankan Slot Sebelum Kuota Habis
-                </p>
-              </div>
-
-              {/* Date & Time Section */}
-              <div className="px-5 py-3 text-center border-b-2 border-gray-800 bg-gray-50">
-                <p className="text-xs font-black text-gray-900 uppercase tracking-tight mb-1">
-                  {activeEventNotif.formatted_date}
-                </p>
-                {activeEventNotif.formatted_time && (
-                  <p className="text-[10px] font-bold text-gray-700 tracking-wide">
-                    Jam {activeEventNotif.formatted_time}
-                  </p>
-                )}
-              </div>
-
-              {/* Pricing Grid */}
-              {(activeEventNotif.monthly_price || activeEventNotif.weekly_price) && (
-                <>
-                  <div className="grid grid-cols-2 gap-3 p-4">
-                    {/* Monthly Package */}
-                    {activeEventNotif.monthly_price && (
-                      <div className="border-2 border-gray-800 rounded-lg p-3">
-                        <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1.5 leading-tight">
-                          Bulanan<br/>(Lebih Hemat)
-                        </p>
-                        
-                        {activeEventNotif.monthly_discount_percent && activeEventNotif.monthly_original_price && (
-                          <p className="text-[9px] text-gray-600 line-through mb-1">
-                            Diskon {activeEventNotif.monthly_discount_percent}%
-                          </p>
-                        )}
-                        
-                        <p className="text-2xl font-black text-gray-800 mb-1">
-                          Rp{activeEventNotif.formatted_monthly_price}
-                        </p>
-                    
-                        <div className="space-y-0.5 text-[9px] text-gray-700 font-bold mb-2 pb-2 border-b-2 border-gray-200">
-                          <p>{activeEventNotif.monthly_frequency}</p>
-                          <p> +{activeEventNotif.monthly_loyalty_points}</p>
-                          {activeEventNotif.monthly_note && <p>{activeEventNotif.monthly_note}</p>}
-                        </div>
-                        
-                        <p className="text-[8px] font-black text-gray-800 uppercase tracking-tight text-center">
-                          {activeEventNotif.participant_count}+ Peserta
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Weekly Package */}
-                    {activeEventNotif.weekly_price && (
-                      <div className="border-2 border-gray-800 rounded-lg p-3 bg-gray-50">
-                        <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
-                          Mingguan
-                        </p>
-                        
-                        <p className="text-2xl font-black text-gray-800 mb-1">
-                          Rp{activeEventNotif.formatted_weekly_price}
-                        </p>
-                        
-                        <p className="text-[9px] font-bold text-gray-700 mb-2">
-                          1x pertemuan
-                        </p>
-                        
-                        <div className="space-y-0.5 text-[9px] text-gray-700 font-bold">
-                          <p>+{activeEventNotif.weekly_loyalty_points}</p>
-                          <p>{activeEventNotif.weekly_note}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Benefits Section */}
-                  <div className="px-4 py-3 bg-gray-50 border-y-2 border-gray-800">
-                    <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
-                      Termasuk
-                    </p>
-                    
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[9px] font-bold text-gray-800 mb-2">
-                      {activeEventNotif.benefits_list && activeEventNotif.benefits_list.map((benefit, idx) => (
-                        <div key={idx}>
-                          <p>{benefit.label || benefit}</p>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <p className="text-[9px] font-black text-gray-800 uppercase tracking-tight pt-2 border-t-2 border-gray-300 text-center leading-tight">
-                      {activeEventNotif.level_tagline}
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {/* Description Section */}
-              {!activeEventNotif.monthly_price && !activeEventNotif.weekly_price && activeEventNotif.description && (
-                <div className="p-4 border-b-2 border-gray-800">
-                  <p className="text-[9px] font-bold text-gray-800 leading-relaxed text-center uppercase tracking-wide">
-                    {activeEventNotif.description}
-                  </p>
-                </div>
-              )}
-
-              {/* Event Image */}
-              {activeEventNotif.image_url && (
-                <div className="relative h-32 overflow-hidden mx-4 my-3 rounded-lg border-2 border-gray-800">
-                  <img
-                    src={activeEventNotif.image_url}
-                    alt={activeEventNotif.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Location Info */}
-              {activeEventNotif.location && (
-                <div className="px-4 py-3 text-center border-t-2 border-gray-800 bg-gray-50">
-                  <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1">
-                    Lokasi
-                  </p>
-                  <p className="text-xs font-bold text-gray-800">
-                    {activeEventNotif.location}
-                  </p>
-                </div>
-              )}
-
-              {/* CTA Button */}
-              <div className="p-4 bg-white border-t-2 border-gray-800 sticky bottom-0 z-20">
-                <button
-                  onClick={handleRegisterEvent}
-                  className="w-full bg-gray-800 text-white py-3 rounded-lg font-black text-xs hover:bg-gray-900 active:scale-95 transition-all duration-200 uppercase tracking-widest border-2 border-gray-800 hover:shadow-lg"
-                >
-                  Daftar Sekarang
-                </button>
+          </div>
+          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-xl">
+              Chat dengan Kami
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
+                <div className="border-8 border-transparent border-l-gray-900"></div>
               </div>
             </div>
           </div>
-        )}
-
-        <Footer />
-        <a
-  href="https://wa.me/6281222977985"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="fixed bottom-6 right-6 z-50 group"
-  aria-label="Chat WhatsApp"
->
-  {/* Pulse Ring Effect */}
-  <div className="absolute inset-0 bg-[#25D366] rounded-full animate-pulse-ring"></div>
-  
-  {/* Main Button */}
-  <div className="relative bg-[#25D366] hover:bg-[#20BA5A] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 animate-float">
-    <img
-      src="/images/whatsapp-symbol-logo-svgrepo-com.svg"
-      alt="WhatsApp"
-      className="w-8 h-8 md:w-9 md:h-9"
-    />
-  </div>
-  
-  {/* Tooltip */}
-  <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-    <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-xl">
-      Chat dengan Kami
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
-        <div className="border-8 border-transparent border-l-gray-900"></div>
-      </div>
-    </div>
-  </div>
-</a>
+        </a>
       </div>
     </>
   );
