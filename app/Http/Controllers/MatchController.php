@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Game;
 use App\Models\News;
 use App\Models\MatchHighlight;
+use App\Models\EventNotif;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -21,7 +22,7 @@ class MatchController extends Controller
         $jakartaNow = Carbon::now('Asia/Jakarta');
 
         // Get filter parameters
-        $selectedYear = $request->input('year', ''); // ✅ Tambahkan year filter
+        $selectedYear = $request->input('year', '');
         $league = $request->input('league', '');
         $series = $request->input('series', '');
         $region = $request->input('region', '');
@@ -30,7 +31,7 @@ class MatchController extends Controller
         $weekOffset = (int) $request->input('week', 0);
         $selectedMonth = $request->input('month');
 
-        // ✅ Get unique leagues dari database
+        // Get unique leagues dari database
         $leagues = Game::select('league')
             ->distinct()
             ->whereNotNull('league')
@@ -41,16 +42,13 @@ class MatchController extends Controller
 
         // ✅ FIX: Tentukan base date dengan prioritas yang benar
         if ($selectedDate) {
-            // Jika ada tanggal spesifik yang dipilih, gunakan tanggal tersebut
             $baseDate = Carbon::parse($selectedDate, 'Asia/Jakarta');
-            // Ambil minggu dari tanggal yang dipilih
             $startOfWeek = $baseDate->copy()->startOfWeek();
+            $weekOffset = 0;
         } elseif ($selectedMonth) {
-            // Jika ada bulan yang dipilih, gunakan bulan tersebut
             $baseDate = Carbon::parse($selectedMonth, 'Asia/Jakarta')->startOfMonth();
             $startOfWeek = $baseDate->copy()->addWeeks($weekOffset);
         } else {
-            // Default ke hari ini
             $baseDate = $jakartaNow->copy();
             $startOfWeek = $baseDate->copy()->startOfWeek()->addWeeks($weekOffset);
         }
@@ -60,30 +58,27 @@ class MatchController extends Controller
         for ($i = 0; $i < 7; $i++) {
             $currentDate = $startOfWeek->copy()->addDays($i);
 
-            // Hitung jumlah pertandingan di tanggal ini dengan semua filter
+            // ✅ CRITICAL FIX: Count matches dengan SEMUA filter yang SAMA dengan query matches
+            // Ini yang bikin konsisten antara count di card vs data yang ditampilkan
             $matchCountQuery = Game::whereDate('date', $currentDate->format('Y-m-d'));
 
-            // ✅ Apply year filter
-            if ($selectedYear !== '') {
+            // ✅ Apply year filter SAMA seperti di matches query
+            if ($selectedYear !== '' && $selectedYear !== null) {
                 $matchCountQuery->whereYear('date', $selectedYear);
             }
 
-            // Apply league filter
             if ($league !== '') {
                 $matchCountQuery->where('league', $league);
             }
 
-            // Apply series filter
             if ($series !== '') {
                 $matchCountQuery->where('series', $series);
             }
 
-            // Apply region filter
             if ($region !== '') {
                 $matchCountQuery->where('region', $region);
             }
 
-            // Apply search filter
             if ($search) {
                 $matchCountQuery->where(function ($query) use ($search) {
                     $query->whereHas('team1', function ($q) use ($search) {
@@ -107,23 +102,21 @@ class MatchController extends Controller
             ];
         }
 
-        // ✅ FIX: Auto-select date logic yang lebih baik
-        if (!$selectedDate && !empty($dates)) {
+        // ✅ FIX: Auto-select date logic - HANYA jika user TIDAK pilih date
+        // IMPORTANT: Jangan auto-select kalau user explicitly pilih date dari request
+        if (!$request->has('date') && !$selectedDate && !empty($dates)) {
             if ($weekOffset == 0 && !$selectedMonth) {
-                // Cari hari ini di dates array
                 $todayInDates = collect($dates)->firstWhere('is_today', true);
-                if ($todayInDates) {
-                    $selectedDate = $todayInDates['full_date'];
-                } else {
-                    $selectedDate = $dates[0]['full_date'];
-                }
+                $selectedDate = $todayInDates ? $todayInDates['full_date'] : $dates[0]['full_date'];
             } else {
-                // Pilih hari pertama dari week yang ditampilkan
-                $selectedDate = $dates[0]['full_date'];
+                $firstDateWithMatch = collect($dates)->firstWhere(function($date) {
+                    return $date['matches'] > 0;
+                });
+                $selectedDate = $firstDateWithMatch ? $firstDateWithMatch['full_date'] : $dates[0]['full_date'];
             }
         }
 
-        // ✅ Hitung info minggu untuk navigasi
+        // Hitung info minggu untuk navigasi
         $currentWeekStart = $startOfWeek->copy();
         $currentWeekEnd = $currentWeekStart->copy()->addDays(6);
         $weekInfo = [
@@ -133,35 +126,29 @@ class MatchController extends Controller
             'is_current' => $weekOffset == 0 && !$selectedMonth && $currentWeekStart->isSameWeek($jakartaNow),
         ];
 
-        // ✅ Query matches dengan semua filter termasuk year
+        // ✅ Query matches dengan filter yang SAMA
         $matchesQuery = Game::with(['team1', 'team2', 'team1Category', 'team2Category']);
 
-        // Apply year filter
-        if ($selectedYear !== '') {
+        if ($selectedYear !== '' && $selectedYear !== null) {
             $matchesQuery->whereYear('date', $selectedYear);
         }
 
-        // Filter by league
         if ($league !== '') {
             $matchesQuery->where('league', $league);
         }
 
-        // Filter by series
         if ($series !== '') {
             $matchesQuery->where('series', $series);
         }
 
-        // Filter by region
         if ($region !== '') {
             $matchesQuery->where('region', $region);
         }
 
-        // Filter by selected date
         if ($selectedDate) {
             $matchesQuery->whereDate('date', $selectedDate);
         }
 
-        // Search filter
         if ($search) {
             $matchesQuery->where(function ($query) use ($search) {
                 $query->whereHas('team1', function ($q) use ($search) {
@@ -173,7 +160,6 @@ class MatchController extends Controller
             });
         }
 
-        // Order by date and time
         $matches = $matchesQuery
             ->orderBy('date', 'asc')
             ->orderBy('time', 'asc')
@@ -209,12 +195,45 @@ class MatchController extends Controller
                 ];
             });
 
+        $activeEventNotif = EventNotif::active()->first();
+
+        $eventNotifData = null;
+        if ($activeEventNotif) {
+            $eventNotifData = [
+                'id' => $activeEventNotif->id,
+                'title' => $activeEventNotif->title,
+                'description' => $activeEventNotif->description,
+                'image_url' => $activeEventNotif->image_url,
+                'formatted_date' => $activeEventNotif->formatted_date,
+                'formatted_time' => $activeEventNotif->formatted_time,
+                'location' => $activeEventNotif->location,
+                'monthly_original_price' => $activeEventNotif->monthly_original_price,
+                'formatted_monthly_original_price' => $activeEventNotif->formatted_monthly_original_price,
+                'monthly_price' => $activeEventNotif->monthly_price,
+                'formatted_monthly_price' => $activeEventNotif->formatted_monthly_price,
+                'monthly_discount_percent' => $activeEventNotif->monthly_discount_percent,
+                'weekly_price' => $activeEventNotif->weekly_price,
+                'formatted_weekly_price' => $activeEventNotif->formatted_weekly_price,
+                'monthly_frequency' => $activeEventNotif->monthly_frequency,
+                'monthly_loyalty_points' => $activeEventNotif->monthly_loyalty_points,
+                'monthly_note' => $activeEventNotif->monthly_note,
+                'weekly_loyalty_points' => $activeEventNotif->weekly_loyalty_points,
+                'weekly_note' => $activeEventNotif->weekly_note,
+                'benefits_list' => $activeEventNotif->benefits_array,
+                'participant_count' => $activeEventNotif->participant_count,
+                'level_tagline' => $activeEventNotif->level_tagline,
+                'whatsapp_number' => $activeEventNotif->whatsapp_number,
+                'whatsapp_message' => $activeEventNotif->whatsapp_message,
+                'whatsapp_url' => $activeEventNotif->whatsapp_url,
+            ];
+        }
+
         return Inertia::render('MatchPage/MatchPage', [
             'auth' => [
                 'client' => auth('client')->user()
             ],
             'filters' => [
-                'year' => $selectedYear, // ✅ Tambahkan year ke filters
+                'year' => $selectedYear,
                 'league' => $league,
                 'series' => $series,
                 'region' => $region,
@@ -227,13 +246,11 @@ class MatchController extends Controller
             'matches' => $matches,
             'today' => $jakartaNow->format('Y-m-d'),
             'weekInfo' => $weekInfo,
-            'leagues' => $leagues, // ✅ Pass unique leagues ke frontend
+            'leagues' => $leagues,
+            'activeEventNotif' => $eventNotifData,
         ]);
     }
 
-    /**
-     * Normalize logo path
-     */
     private function normalizeLogoPath($logoPath, $teamName = null)
     {
         if (empty($logoPath)) {
@@ -259,9 +276,6 @@ class MatchController extends Controller
         return '/storage/' . ltrim($logoPath, '/');
     }
 
-    /**
-     * Display match detail page
-     */
     public function show($id)
     {
         Carbon::setLocale('id');
@@ -426,9 +440,6 @@ class MatchController extends Controller
         ]);
     }
 
-    /**
-     * Get matches by date (untuk AJAX request)
-     */
     public function getMatchesByDate(Request $request)
     {
         $date = $request->input('date');
@@ -461,9 +472,6 @@ class MatchController extends Controller
         ]);
     }
 
-    /**
-     * Search matches
-     */
     public function search(Request $request)
     {
         $query = $request->input('query');
@@ -490,9 +498,6 @@ class MatchController extends Controller
         ]);
     }
 
-    /**
-     * Get match statistics
-     */
     public function getStats($id)
     {
         $match = Game::findOrFail($id);

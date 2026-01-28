@@ -1,36 +1,93 @@
 import { Head, Link, router } from "@inertiajs/react";
-import { useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, Calendar, X } from "lucide-react";
 import Navigation from "../../Components/Navigation";
 import Footer from "../../Components/Footer";
-import Contact from '../../Components/Contact';
 
-export default function MatchPage({ auth, filters, dates, matches, today, weekInfo, leagues }) {
+export default function MatchPage({ auth, filters, dates, matches, today, weekInfo, leagues, activeEventNotif = null }) {
   const [selectedYear, setSelectedYear] = useState(filters.year || '');
-  const [selectedLeague, setSelectedLeague] = useState(filters.league);
-  const [selectedSeries, setSelectedSeries] = useState(filters.series);
-  const [selectedRegion, setSelectedRegion] = useState(filters.region);
-  const [selectedDate, setSelectedDate] = useState(filters.selectedDate);
+  const [selectedLeague, setSelectedLeague] = useState(filters.league || '');
+  const [selectedSeries, setSelectedSeries] = useState(filters.series || '');
+  const [selectedRegion, setSelectedRegion] = useState(filters.region || '');
+  const [selectedDate, setSelectedDate] = useState(filters.selectedDate || null);
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const [weekOffset, setWeekOffset] = useState(filters.week || 0);
   const [selectedMonth, setSelectedMonth] = useState(filters.month || '');
+  const [showEventNotifPopup, setShowEventNotifPopup] = useState(false);
 
-  // ✅ Handle filter changes dengan year
+  // ✅ SYNC STATE WITH PROPS
+  useEffect(() => {
+    setSelectedYear(filters.year || '');
+    setSelectedLeague(filters.league || '');
+    setSelectedSeries(filters.series || '');
+    setSelectedRegion(filters.region || '');
+    setSelectedDate(filters.selectedDate || null);
+    setSearchQuery(filters.search || '');
+    setWeekOffset(filters.week || 0);
+    setSelectedMonth(filters.month || '');
+  }, [filters]);
+
+  // ✅ SHOW EVENT NOTIF POPUP
+  useEffect(() => {
+    if (activeEventNotif) {
+      setShowEventNotifPopup(true);
+    }
+  }, [activeEventNotif]);
+
+  // ✅ CRITICAL FIX: Don't send empty string parameters
   const handleFilterChange = (filterName, value) => {
-    const params = {
-      league: filterName === 'league' ? value : selectedLeague,
-      series: filterName === 'series' ? value : selectedSeries,
-      region: filterName === 'region' ? value : selectedRegion,
-      date: filterName === 'date' ? value : selectedDate,
-      search: searchQuery,
-      week: filterName === 'week' ? value : weekOffset,
-      month: filterName === 'month' ? value : selectedMonth,
-    };
+    const params = {};
 
-    // ✅ Handle year filter
-    const yearValue = filterName === 'year' ? value : selectedYear;
-    if (yearValue && yearValue !== '') {
-      params.year = yearValue;
+    // Build base params - ONLY if they have values
+    if (selectedLeague && selectedLeague !== '') params.league = selectedLeague;
+    if (selectedSeries && selectedSeries !== '') params.series = selectedSeries;
+    if (selectedRegion && selectedRegion !== '') params.region = selectedRegion;
+    if (searchQuery && searchQuery !== '') params.search = searchQuery;
+    if (selectedYear && selectedYear !== '') params.year = selectedYear;
+
+    // Apply the changed filter
+    if (filterName === 'year') {
+      if (value && value !== '') {
+        params.year = value;
+      } else {
+        delete params.year; // Remove year if empty
+      }
+    } else if (filterName === 'league') {
+      if (value && value !== '') {
+        params.league = value;
+      } else {
+        delete params.league;
+      }
+    } else if (filterName === 'series') {
+      if (value && value !== '') {
+        params.series = value;
+      } else {
+        delete params.series;
+      }
+    } else if (filterName === 'region') {
+      if (value && value !== '') {
+        params.region = value;
+      } else {
+        delete params.region;
+      }
+    }
+
+    // Date navigation logic
+    if (filterName === 'date') {
+      params.date = value;
+    } else if (filterName === 'week') {
+      params.week = value;
+    } else if (filterName === 'month') {
+      params.month = value;
+    } else {
+      // Preserve current date state for other filters
+      if (selectedDate) {
+        params.date = selectedDate;
+      } else if (weekOffset !== 0) {
+        params.week = weekOffset;
+      } else if (selectedMonth) {
+        params.month = selectedMonth;
+      }
     }
 
     router.get('/jadwal-hasil', params, {
@@ -39,23 +96,14 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     });
   };
 
-  // ✅ Handle week navigation - reset date dan month
   const handleWeekChange = (offset) => {
-    setWeekOffset(offset);
-    setSelectedDate(null);
-    setSelectedMonth('');
-    
-    const params = {
-      league: selectedLeague,
-      series: selectedSeries,
-      region: selectedRegion,
-      search: searchQuery,
-      week: offset,
-    };
+    const params = { week: offset };
 
-    if (selectedYear && selectedYear !== '') {
-      params.year = selectedYear;
-    }
+    if (selectedLeague && selectedLeague !== '') params.league = selectedLeague;
+    if (selectedSeries && selectedSeries !== '') params.series = selectedSeries;
+    if (selectedRegion && selectedRegion !== '') params.region = selectedRegion;
+    if (selectedYear && selectedYear !== '') params.year = selectedYear;
+    if (searchQuery && searchQuery !== '') params.search = searchQuery;
 
     router.get('/jadwal-hasil', params, {
       preserveState: true,
@@ -63,49 +111,17 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     });
   };
 
-  // ✅ Handle month selection - reset date dan week
-  const handleMonthChange = (e) => {
-    const month = e.target.value;
-    setSelectedMonth(month);
-    setWeekOffset(0);
-    setSelectedDate(null);
-    
-    const params = {
-      league: selectedLeague,
-      series: selectedSeries,
-      region: selectedRegion,
-      search: searchQuery,
-      month: month,
-    };
-
-    if (selectedYear && selectedYear !== '') {
-      params.year = selectedYear;
-    }
-
-    router.get('/jadwal-hasil', params, {
-      preserveState: true,
-      preserveScroll: true,
-    });
-  };
-
-  // ✅ Handle specific date selection - reset week dan month
   const handleDatePickerChange = (e) => {
     const date = e.target.value;
-    setSelectedDate(date);
-    setSelectedMonth('');
-    setWeekOffset(0);
+    if (!date) return;
     
-    const params = {
-      league: selectedLeague,
-      series: selectedSeries,
-      region: selectedRegion,
-      search: searchQuery,
-      date: date,
-    };
+    const params = { date: date };
 
-    if (selectedYear && selectedYear !== '') {
-      params.year = selectedYear;
-    }
+    if (selectedLeague && selectedLeague !== '') params.league = selectedLeague;
+    if (selectedSeries && selectedSeries !== '') params.series = selectedSeries;
+    if (selectedRegion && selectedRegion !== '') params.region = selectedRegion;
+    if (selectedYear && selectedYear !== '') params.year = selectedYear;
+    if (searchQuery && searchQuery !== '') params.search = searchQuery;
 
     router.get('/jadwal-hasil', params, {
       preserveState: true,
@@ -113,22 +129,14 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     });
   };
 
-  // ✅ Reset to current month
   const resetToCurrentMonth = () => {
-    setSelectedMonth('');
-    setWeekOffset(0);
-    setSelectedDate(null);
+    const params = {};
     
-    const params = {
-      league: selectedLeague,
-      series: selectedSeries,
-      region: selectedRegion,
-      search: searchQuery,
-    };
-
-    if (selectedYear && selectedYear !== '') {
-      params.year = selectedYear;
-    }
+    if (selectedLeague && selectedLeague !== '') params.league = selectedLeague;
+    if (selectedSeries && selectedSeries !== '') params.series = selectedSeries;
+    if (selectedRegion && selectedRegion !== '') params.region = selectedRegion;
+    if (selectedYear && selectedYear !== '') params.year = selectedYear;
+    if (searchQuery && searchQuery !== '') params.search = searchQuery;
 
     router.get('/jadwal-hasil', params, {
       preserveState: true,
@@ -136,34 +144,70 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
     });
   };
 
-  // ✅ Handle search
   const handleSearch = (e) => {
     e.preventDefault();
 
-    const params = {
-      league: selectedLeague,
-      series: selectedSeries,
-      region: selectedRegion,
-      date: selectedDate,
-      search: searchQuery,
-      week: weekOffset,
-      month: selectedMonth,
-    };
-
-    if (selectedYear && selectedYear !== '') {
-      params.year = selectedYear;
+    const params = {};
+    
+    if (searchQuery && searchQuery !== '') params.search = searchQuery;
+    if (selectedLeague && selectedLeague !== '') params.league = selectedLeague;
+    if (selectedSeries && selectedSeries !== '') params.series = selectedSeries;
+    if (selectedRegion && selectedRegion !== '') params.region = selectedRegion;
+    if (selectedYear && selectedYear !== '') params.year = selectedYear;
+    
+    if (selectedDate) {
+      params.date = selectedDate;
+    } else if (weekOffset !== 0) {
+      params.week = weekOffset;
+    } else if (selectedMonth) {
+      params.month = selectedMonth;
     }
 
     router.get('/jadwal-hasil', params, {
       preserveState: true,
       preserveScroll: true,
     });
+  };
+
+  const handleCloseEventNotifPopup = () => {
+    setShowEventNotifPopup(false);
+  };
+
+  const handleRegisterEvent = () => {
+    if (activeEventNotif?.whatsapp_url) {
+      window.open(activeEventNotif.whatsapp_url, '_blank', 'noopener,noreferrer');
+      handleCloseEventNotifPopup();
+    }
   };
 
   return (
     <>
       <Head title="THE ARENA - Jadwal & Hasil" />
       <style>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes modal-appear {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+
+        .animate-modal-appear {
+          animation: modal-appear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
         * {
           font-family: 'Montserrat', sans-serif;
@@ -176,6 +220,33 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
         input[type="month"],
         input[type="date"] {
           color-scheme: dark;
+        }
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        @keyframes pulse-ring {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
+        }
+
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+
+        .animate-pulse-ring {
+          animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
       `}</style>
       <div className="min-h-screen flex flex-col bg-[#013064]">
@@ -200,14 +271,10 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                 <div className="relative">
                   <select
                     value={selectedYear}
-                    onChange={(e) => {
-                      setSelectedYear(e.target.value);
-                      handleFilterChange('year', e.target.value);
-                    }}
+                    onChange={(e) => handleFilterChange('year', e.target.value)}
                     className="bg-[#ffd22f] text-[#013064] px-6 py-2.5 text-sm md:text-base font-semibold cursor-pointer appearance-none pr-10 rounded"
                   >
                     <option value="">Semua Tahun</option>
-                    {/* Generate years from 2020 to next year */}
                     {Array.from({ length: new Date().getFullYear() - 2020 + 2 }, (_, i) => 2020 + i).reverse().map(year => (
                       <option key={year} value={year}>{year}</option>
                     ))}
@@ -219,10 +286,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                 <div className="relative">
                   <select
                     value={selectedLeague}
-                    onChange={(e) => {
-                      setSelectedLeague(e.target.value);
-                      handleFilterChange('league', e.target.value);
-                    }}
+                    onChange={(e) => handleFilterChange('league', e.target.value)}
                     className="bg-[#ffd22f] text-[#013064] px-6 py-2.5 text-sm md:text-base font-semibold cursor-pointer appearance-none pr-10 rounded"
                   >
                     <option value="">Semua Liga</option>
@@ -237,10 +301,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                 <div className="relative">
                   <select
                     value={selectedSeries}
-                    onChange={(e) => {
-                      setSelectedSeries(e.target.value);
-                      handleFilterChange('series', e.target.value);
-                    }}
+                    onChange={(e) => handleFilterChange('series', e.target.value)}
                     className="bg-[#ffd22f] text-[#013064] px-6 py-2.5 text-sm md:text-base font-semibold cursor-pointer appearance-none pr-10 rounded"
                   >
                     <option value="">Semua Series</option>
@@ -255,10 +316,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                 <div className="relative">
                   <select
                     value={selectedRegion}
-                    onChange={(e) => {
-                      setSelectedRegion(e.target.value);
-                      handleFilterChange('region', e.target.value);
-                    }}
+                    onChange={(e) => handleFilterChange('region', e.target.value)}
                     className="bg-[#ffd22f] text-[#013064] px-6 py-2.5 text-sm md:text-base font-semibold cursor-pointer appearance-none pr-10 rounded"
                   >
                     <option value="">Semua Regional</option>
@@ -355,12 +413,7 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
                 {dates.map((date) => (
                   <div
                     key={date.full_date}
-                    onClick={() => {
-                      setSelectedDate(date.full_date);
-                      setWeekOffset(0);
-                      setSelectedMonth('');
-                      handleFilterChange('date', date.full_date);
-                    }}
+                    onClick={() => handleFilterChange('date', date.full_date)}
                     className={`cursor-pointer transition-all overflow-hidden ${selectedDate === date.full_date
                         ? 'ring-4 ring-[#ffd22f] shadow-lg'
                         : 'hover:ring-2 hover:ring-white/50'
@@ -430,12 +483,10 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
 
                           {/* Match Info */}
                           <div className="flex flex-col items-center justify-center min-w-[130px] md:min-w-[150px]">
-                            {/* League/Competition - Above Badge */}
                             <p className="text-sm md:text-base font-bold text-gray-800 mb-2 text-center">
                               {match.league}
                             </p>
 
-                            {/* Status Badge */}
                             <div className="mb-1.5">
                               <span className={`px-2.5 py-1 text-xs font-bold uppercase ${match.type === 'live'
                                   ? 'bg-red-600 text-white'
@@ -535,8 +586,31 @@ export default function MatchPage({ auth, filters, dates, matches, today, weekIn
           </div>
         </div>
 
-        <Contact />
         <Footer />
+        <a
+          href="https://wa.me/6281222977985"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 z-50 group"
+          aria-label="Chat WhatsApp"
+        >
+          <div className="absolute inset-0 bg-[#25D366] rounded-full animate-pulse-ring"></div>
+          <div className="relative bg-[#25D366] hover:bg-[#20BA5A] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 animate-float">
+            <img
+              src="/images/whatsapp-symbol-logo-svgrepo-com.svg"
+              alt="WhatsApp"
+              className="w-8 h-8 md:w-9 md:h-9"
+            />
+          </div>
+          <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-xl">
+              Chat dengan Kami
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
+                <div className="border-8 border-transparent border-l-gray-900"></div>
+              </div>
+            </div>
+          </div>
+        </a>
       </div>
     </>
   );

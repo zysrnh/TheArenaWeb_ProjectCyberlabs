@@ -25,9 +25,7 @@ export default function EquipmentDetail() {
 
   // Admin contacts
   const adminContacts = [
-    { name: "Admin 1", phone: "6283861669565" },
-    { name: "Admin 2", phone: "6281234567890" },
-    { name: "Admin 3", phone: "6289876543210" }
+    { name: "Admin 1", phone: "6281222977985" },
   ];
 
   // Show notification from flash messages or errors
@@ -127,6 +125,34 @@ export default function EquipmentDetail() {
           word-break: break-word;
           overflow-wrap: break-word;
         }
+                @keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
       `}</style>
       <div className="min-h-screen flex flex-col bg-[#013064]">
         <Navigation activePage="equipment" />
@@ -255,10 +281,10 @@ export default function EquipmentDetail() {
 
             {/* Image Gallery - 1 Besar + 4 Kecil */}
             <div className="mb-12">
-              {/* Desktop Layout - Simetris */}
+            {/* Desktop Layout - Simetris */}
               <div className="hidden lg:flex gap-4 justify-center">
                 {/* Main Image (Gambar 1) - 550px */}
-                <div className="w-[550px] h-[550px]">
+                <div className="w-[550px] h-[550px] flex-shrink-0">
                   <img
                     src={displayImages[0]}
                     alt={`${equipment.name} - Main`}
@@ -270,9 +296,9 @@ export default function EquipmentDetail() {
                 </div>
                 
                 {/* Grid 4 Images (Gambar 2-5) - 550px total */}
-                <div className="grid grid-cols-2 gap-4 w-[550px] h-[550px]">
+                <div className="grid grid-cols-2 gap-4 w-[550px] h-[550px] flex-shrink-0">
                   {displayImages.slice(1, 5).map((img, idx) => (
-                    <div key={idx} className="w-full h-full">
+                    <div key={idx} className="w-full h-full overflow-hidden">
                       <img
                         src={img}
                         alt={`${equipment.name} - ${idx + 2}`}
@@ -285,7 +311,6 @@ export default function EquipmentDetail() {
                   ))}
                 </div>
               </div>
-
               {/* Mobile Layout - Slider/Carousel */}
               <div className="lg:hidden relative">
                 <div className="relative w-full aspect-square overflow-hidden">
@@ -429,6 +454,35 @@ export default function EquipmentDetail() {
 
         <Contact />
         <Footer />
+        <a
+  href="https://wa.me/6281222977985"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="fixed bottom-6 right-6 z-50 group"
+  aria-label="Chat WhatsApp"
+>
+  {/* Pulse Ring Effect */}
+  <div className="absolute inset-0 bg-[#25D366] rounded-full animate-pulse-ring"></div>
+  
+  {/* Main Button */}
+  <div className="relative bg-[#25D366] hover:bg-[#20BA5A] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 animate-float">
+    <img
+      src="/images/whatsapp-symbol-logo-svgrepo-com.svg"
+      alt="WhatsApp"
+      className="w-8 h-8 md:w-9 md:h-9"
+    />
+  </div>
+  
+  {/* Tooltip */}
+  <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+    <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-xl">
+      Chat dengan Kami
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
+        <div className="border-8 border-transparent border-l-gray-900"></div>
+      </div>
+    </div>
+  </div>
+</a>
       </div>
     </>
   );

@@ -1,9 +1,11 @@
+
 import { Head, Link, usePage, router } from "@inertiajs/react";
 import { useState, useEffect } from "react";
 import { ChevronRight, Phone, Mail, LogOut, X } from "lucide-react";
 import Navigation from "../../Components/Navigation";
 import Footer from "../../Components/Footer";
 import Contact from '../../Components/Contact';
+
 export default function HomePage() {
   // Destructure props dengan default values
   const {
@@ -15,7 +17,8 @@ export default function HomePage() {
     sponsors = [],
     partners = [],
     reviews = [],
-    facilities = []
+    facilities = [],
+    activeEventNotif = null,
   } = usePage().props;
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -25,7 +28,7 @@ export default function HomePage() {
   const [filter, setFilter] = useState(currentFilter || 'all');
   const [reviewsList, setReviewsList] = useState(reviews);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [currentFacilityIndex, setCurrentFacilityIndex] = useState(0);
+
   const [reviewForm, setReviewForm] = useState({
     rating_facilities: 5,
     rating_hospitality: 5,
@@ -35,6 +38,9 @@ export default function HomePage() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [notification, setNotification] = useState(null);
   const [currentReviewPage, setCurrentReviewPage] = useState(0);
+  const [showEventNotifPopup, setShowEventNotifPopup] = useState(false);
+
+  
 
   // ✅ USEEFFECT AUTO-SLIDE REVIEW CAROUSEL
   useEffect(() => {
@@ -50,49 +56,18 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [reviewsList.length]);
 
-  // ✅ USEEFFECT AUTO-ROTATE FACILITIES (TERPISAH!)
   useEffect(() => {
-    if (facilities.length < 3) return;
-
-    const interval = setInterval(() => {
-      setCurrentFacilityIndex((prev) => {
-        const totalSets = Math.ceil(facilities.length / 3);
-        return (prev + 1) % totalSets;
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [facilities.length]);
+    if (activeEventNotif) {
+      // Langsung muncul tanpa delay
+      setShowEventNotifPopup(true);
+    }
+  }, [activeEventNotif]);
 
   // Get reviews untuk halaman saat ini
   const reviewsPerPage = 3;
   const startIndex = currentReviewPage * reviewsPerPage;
   const currentReviews = reviewsList.slice(startIndex, startIndex + reviewsPerPage);
   const totalReviewPages = Math.ceil(reviewsList.length / reviewsPerPage);
-
-  // ✅ Get current facilities to display (3 items)
-  const currentFacilities = facilities.length > 0
-    ? facilities.slice(currentFacilityIndex * 3, currentFacilityIndex * 3 + 3)
-    : [
-      {
-        id: 1,
-        name: 'Makanan & Minuman',
-        image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800',
-        description: 'Nikmati berbagai pilihan makanan dan minuman'
-      },
-      {
-        id: 2,
-        name: 'Penitipan Barang',
-        image: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=800',
-        description: 'Loker aman untuk barang berharga Anda'
-      },
-      {
-        id: 3,
-        name: 'Toilet dan Kamar Mandi',
-        image: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=800',
-        description: 'Fasilitas bersih dan terawat'
-      }
-    ];
 
   const handleFilterChange = (newFilter) => {
     setFilter(newFilter);
@@ -115,7 +90,6 @@ export default function HomePage() {
 
       setLastScrollY(currentScrollY);
     };
-
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -206,6 +180,45 @@ export default function HomePage() {
     setShowReviewModal(true);
   };
 
+  const handleCloseEventNotifPopup = () => {
+    setShowEventNotifPopup(false);
+  };
+
+  const handleRegisterEvent = () => {
+    if (activeEventNotif?.whatsapp_url) {
+      window.open(activeEventNotif.whatsapp_url, '_blank', 'noopener,noreferrer');
+      handleCloseEventNotifPopup();
+    }
+  };
+
+  const getFacilityImageUrl = (url) => {
+    if (!url) {
+      return 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800';
+    }
+    if (url.startsWith('http')) return url;
+    return `/storage/${url}`;
+  };
+
+  const getDefaultFacilityImage = (facilityName) => {
+    const name = facilityName?.toLowerCase() || '';
+    if (name.includes('cafe') || name.includes('resto')) {
+      return 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800';
+    } else if (name.includes('makanan')) {
+      return 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=800';
+    } else if (name.includes('minuman')) {
+      return 'https://images.unsplash.com/photo-1534353436294-0dbd4bdac845?w=800';
+    } else if (name.includes('ganti')) {
+      return 'https://images.unsplash.com/photo-1534349762230-e0cadf78f5da?w=800';
+    } else if (name.includes('parkir')) {
+      return 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800';
+    } else if (name.includes('wifi')) {
+      return 'https://images.unsplash.com/photo-1551808525-51a94da548ce?w=800';
+    } else if (name.includes('tribun')) {
+      return 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800';
+    }
+    return 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800';
+  };
+
   const slides = [
     {
       title: "BOOKING LAPANGAN SEKARANG!",
@@ -216,16 +229,9 @@ export default function HomePage() {
         </>
       ),
       image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200",
-    },
-    {
-      title: "PENYEWAAN LAPANGAN BASKET",
-      subtitle: "The Arena Basketball",
-      description: (
-        <>
-          Lapangan basket The Arena dapat digunakan untuk <strong>latihan mandiri, aktivitas komunitas, sekolah, hingga event basket.</strong> Seluruh lapangan dirawat dengan baik dan berada di lingkungan yang aman serta nyaman.
-        </>
-      ),
-      image: "https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200",
+      buttonText: "Booking Sekarang",
+      buttonAction: "internal",
+      buttonLink: "/booking"
     },
     {
       title: "PENYEWAAN PERLENGKAPAN BASKET",
@@ -235,7 +241,10 @@ export default function HomePage() {
           Selain lapangan, The Arena juga menyediakan berbagai <strong>peralatan dan perlengkapan basket</strong> yang dapat disewa secara <strong>praktis dan fleksibel,</strong> sehingga pengguna tidak perlu repot menyiapkan sendiri.
         </>
       ),
-      image: "https://images.unsplash.com/photo-1608245449230-4ac19066d2d0?w=1200",
+      image: "/images/Lapangan/HOME1.jpg", // ✅ Ambil dari gambar PVJ
+      buttonText: "Booking Peralatan",
+      buttonAction: "internal",
+      buttonLink: "/booking-peralatan"
     },
     {
       title: "PENYELENGGARAAN ACARA BASKET",
@@ -245,7 +254,10 @@ export default function HomePage() {
           Sebagai bagian dari ekosistem basket di Bandung, The Arena tidak hanya menjadi tempat bermain, tetapi juga <strong>ruang berkumpul dan berkompetisi bagi komunitas basket.</strong> Kami menyediakan layanan <strong>penyelenggaraan acara basket,</strong> mulai dari friendly match hingga turnamen berskala besar.
         </>
       ),
-      image: "https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200",
+      image: "/images/Lapangan/ACARA1.jpg",
+      buttonText: "Hubungi Kami",
+      buttonAction: "whatsapp",
+      buttonLink: "https://wa.me/6281222977985"
     },
   ];
 
@@ -299,32 +311,83 @@ export default function HomePage() {
         .animate-progress {
           animation: progress 5s linear;
         }
-          /* ✅ TAMBAHKAN INI DI DALAM <style> TAG DI HomePage.jsx */
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
 
-.animate-fadeInUp {
-  animation: fadeInUp 0.6s ease-out;
-}
+        .animate-fadeInUp {
+          animation: fadeInUp 0.6s ease-out;
+        }
 
-/* Smooth transition untuk carousel dots */
-.carousel-dot {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+        .carousel-dot {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-.carousel-dot:hover {
-  transform: scale(1.2);
-}
+        .carousel-dot:hover {
+          transform: scale(1.2);
+        }
+
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes modal-appear {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        
+        .animate-modal-appear {
+          animation: modal-appear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        @keyframes pulse-ring {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
+        }
+
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+
+        .animate-pulse-ring {
+          animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
       `}</style>
+
       <div className="min-h-screen flex flex-col bg-[#013064]">
         {/* Navigation - RESPONSIVE & STICKY */}
         <Navigation activePage="home" />
@@ -368,52 +431,110 @@ export default function HomePage() {
         {/* Hero Section with Carousel - RESPONSIVE */}
         <main className="flex-1 relative">
           <div className="relative h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden">
+            {/* Background Image */}
             <div
-              className="absolute inset-0 bg-cover bg-center"
+              className="absolute inset-0 bg-cover bg-center transition-all duration-700"
               style={{
                 backgroundImage: `url('${slides[currentSlide].image}')`,
                 filter: "brightness(0.4)",
               }}
             />
 
+            {/* Content */}
             <div className="relative z-10 h-full flex items-center justify-center">
               <div className="text-center text-white px-4 max-w-4xl">
                 <h2 className="text-[#FDB913] text-lg md:text-xl lg:text-2xl font-semibold mb-2">
                   {slides[currentSlide].subtitle}
                 </h2>
+
                 <h1 className="text-2xl md:text-4xl lg:text-6xl font-bold mb-4 md:mb-6 leading-tight">
                   {slides[currentSlide].title}
                 </h1>
+
                 <p className="text-sm md:text-base lg:text-lg mb-6 md:mb-8 text-gray-200 max-w-2xl mx-auto leading-relaxed">
                   {slides[currentSlide].description}
                 </p>
-                <Link href="/booking">
-                  <button className="bg-[#ffd22f] text-[#013064] px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition inline-flex items-center gap-2 w-fit">
-                    Booking Lapangan
-                  </button>
-                </Link>
+
+                {/* Button */}
+                {slides[currentSlide].buttonAction === "whatsapp" ? (
+                  <a
+                    href={slides[currentSlide].buttonLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-[#ffd22f] text-[#013064] px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition inline-flex items-center gap-2 w-fit mx-auto"
+                  >
+                    {slides[currentSlide].buttonText}
+                  </a>
+                ) : (
+                  <Link href={slides[currentSlide].buttonLink}>
+                    <button className="bg-[#ffd22f] text-[#013064] px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition inline-flex items-center gap-2 w-fit mx-auto">
+                      {slides[currentSlide].buttonText}
+                    </button>
+                  </Link>
+                )}
               </div>
-              {/* Navigation Buttons - Hidden on Mobile */}
+
+              {/* Navigation Buttons - Desktop: SVG Icons, Mobile: Compact Arrows */}
               <button
                 onClick={prevSlide}
-                className="hidden md:flex absolute left-4 md:left-24 lg:left-32 top-1/2 -translate-y-1/2 w-12 h-12 lg:w-14 lg:h-14 items-center justify-center hover:scale-110 transition-transform"
+                className="absolute left-2 md:left-24 lg:left-32 top-1/2 -translate-y-1/2 
+                           w-9 h-9 md:w-12 md:h-12 lg:w-14 lg:h-14 
+                           flex items-center justify-center 
+                           bg-white/20 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none
+                           rounded-full md:rounded-none
+                           hover:bg-white/30 md:hover:bg-transparent
+                           hover:scale-110 transition-all
+                           border border-white/40 md:border-0"
               >
+                {/* Mobile: Simple Arrow */}
+                <svg className="w-5 h-5 md:hidden text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
+                </svg>
+                {/* Desktop: SVG Image */}
                 <img
                   src="/images/Kiri.svg"
                   alt="Previous"
-                  className="w-full h-full"
+                  className="hidden md:block w-full h-full"
                 />
               </button>
+
               <button
                 onClick={nextSlide}
-                className="hidden md:flex absolute right-4 md:right-24 lg:right-32 top-1/2 -translate-y-1/2 w-12 h-12 lg:w-14 lg:h-14 items-center justify-center hover:scale-110 transition-transform"
+                className="absolute right-2 md:right-24 lg:right-32 top-1/2 -translate-y-1/2 
+                           w-9 h-9 md:w-12 md:h-12 lg:w-14 lg:h-14 
+                           flex items-center justify-center 
+                           bg-white/20 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none
+                           rounded-full md:rounded-none
+                           hover:bg-white/30 md:hover:bg-transparent
+                           hover:scale-110 transition-all
+                           border border-white/40 md:border-0"
               >
+                {/* Mobile: Simple Arrow */}
+                <svg className="w-5 h-5 md:hidden text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                </svg>
+                {/* Desktop: SVG Image */}
                 <img
                   src="/images/Kanan.svg"
                   alt="Next"
-                  className="w-full h-full"
+                  className="hidden md:block w-full h-full"
                 />
               </button>
+
+              {/* Carousel Indicators - Visible on All Devices */}
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                {slides.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`transition-all duration-300 carousel-dot ${index === currentSlide
+                      ? 'w-8 h-2 bg-[#ffd22f]'
+                      : 'w-2 h-2 bg-white/50 hover:bg-white/80'
+                      } rounded-full`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </main>
@@ -458,7 +579,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2">
             <div className="relative h-full min-h-[300px] md:min-h-[400px]">
               <img
-                src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200"
+                src="/images/Lapangan/THE.jpg" // ✅ GANTI JADI INI
                 alt="Basketball Court"
                 className="w-full h-full object-cover"
               />
@@ -476,7 +597,7 @@ export default function HomePage() {
               </p>
               <Link href="/booking">
                 <button className="bg-[#ffd22f] text-[#013064] px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-semibold hover:bg-[#ffe066] transition inline-flex items-center gap-2 w-fit">
-                  Booking Lapangan
+                  Booking Sekarang
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </Link>
@@ -515,7 +636,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2">
             <div className="relative h-full min-h-[300px] md:min-h-[400px]">
               <img
-                src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200"
+                src="/images/Lapangan/EVENT.jpg" // ✅ GANTI JADI INI
                 alt="Basketball Court"
                 className="w-full h-full object-cover"
               />
@@ -526,7 +647,7 @@ export default function HomePage() {
                 Event Organizer
               </h3>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 leading-tight">
-                Penyewaan Acara Basket
+                Penyelenggara Event Basket
               </h2>
               <p className="text-gray-300 text-sm md:text-base mb-6 md:mb-8 leading-relaxed">
                 Sebagai bagian dari ekosistem basket di Bandung, The Arena tidak hanya menjadi tempat bermain, tetapi juga <strong>ruang berkumpul dan berkompetisi bagi komunitas basket.</strong> Kami menyediakan layanan <strong>penyelenggaraan acara basket,</strong> mulai dari friendly match hingga turnamen berskala besar.
@@ -777,34 +898,34 @@ export default function HomePage() {
                   <p>Dapatkan harga spesial dan berbagai keuntungan eksklusif. Hubungi admin untuk informasi lengkap tentang paket member kami.</p>
                 </div>
 
-                <Link
+                <a
                   href="https://wa.me/6281222977985"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="bg-[#ffd22f] text-[#013064] px-5 md:px-7 py-2 md:py-3 text-xs md:text-sm lg:text-base font-bold hover:bg-[#ffe066] transition inline-flex items-center gap-2"
                 >
                   Hubungi Admin
                   <ChevronRight className="w-4 h-4" />
-                </Link>
+                </a>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Fasilitas Section - RESPONSIVE & DYNAMIC */}
+        {/* Facilities Section - RESPONSIVE */}
         <div className="bg-white">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {currentFacilities.length > 0 ? (
-              currentFacilities.map((facility) => (
+            {Array.isArray(facilities) && facilities.length > 0 ? (
+              facilities.slice(0, 6).map((facility) => (
                 <div
                   key={facility.id}
-                  className="group cursor-pointer overflow-hidden relative h-[280px] md:h-[320px] lg:h-[350px]"
+                  className="group overflow-hidden relative h-[280px] md:h-[320px] lg:h-[350px]"
                 >
                   <img
-                    src={facility.image || 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800'}
+                    src={facility.image}
                     alt={facility.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     onError={(e) => {
-                      e.target.onerror = null; // Prevent infinite loop
-                      e.target.src = 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800';
+                      e.target.src = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800';
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
@@ -812,14 +933,9 @@ export default function HomePage() {
                     <span className="text-[#ffd22f] text-sm md:text-base lg:text-lg font-semibold mb-1 md:mb-2 block">
                       Fasilitas
                     </span>
-                    <h3 className="text-xl md:text-2xl lg:text-3xl font-bold">
+                    <h3 className="text-xl md:text-2xl lg:text-3xl font-bold mb-2">
                       {facility.name}
                     </h3>
-                    {facility.description && (
-                      <p className="text-sm text-gray-300 mt-2 line-clamp-2">
-                        {facility.description}
-                      </p>
-                    )}
                   </div>
                 </div>
               ))
@@ -859,8 +975,8 @@ export default function HomePage() {
                 <button
                   onClick={() => handleFilterChange('all')}
                   className={`px-6 sm:px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all whitespace-nowrap ${filter === 'all'
-                      ? 'bg-[#ffd22f] text-[#013064]'
-                      : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+                    ? 'bg-[#ffd22f] text-[#013064]'
+                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
                     }`}
                 >
                   Semua
@@ -868,8 +984,8 @@ export default function HomePage() {
                 <button
                   onClick={() => handleFilterChange('live')}
                   className={`px-6 sm:px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all sm:border-l-0 whitespace-nowrap ${filter === 'live'
-                      ? 'bg-[#ffd22f] text-[#013064]'
-                      : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+                    ? 'bg-[#ffd22f] text-[#013064]'
+                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
                     }`}
                 >
                   Pertandingan Berlangsung
@@ -877,8 +993,8 @@ export default function HomePage() {
                 <button
                   onClick={() => handleFilterChange('upcoming')}
                   className={`px-6 sm:px-8 md:px-12 py-3 md:py-3.5 text-sm md:text-base font-semibold transition-all sm:border-l-0 whitespace-nowrap ${filter === 'upcoming'
-                      ? 'bg-[#ffd22f] text-[#013064]'
-                      : 'bg-[#013064] text-white border border-white hover:bg-white/10'
+                    ? 'bg-[#ffd22f] text-[#013064]'
+                    : 'bg-[#013064] text-white border border-white hover:bg-white/10'
                     }`}
                 >
                   Pertandingan Berikutnya
@@ -1119,9 +1235,7 @@ export default function HomePage() {
             {/* Presented By Section (Sponsors) */}
             {sponsors && sponsors.length > 0 && (
               <div className="mb-16 md:mb-20">
-                <p className="text-[#ffd22f] text-center text-lg md:text-xl lg:text-2xl font-semibold mb-6 md:mb-8">
-                  Presented By
-                </p>
+
                 <div className="flex flex-col sm:flex-row justify-center gap-6 md:gap-8 flex-wrap">
                   {sponsors.map((sponsor) => (
                     <div
@@ -1142,9 +1256,7 @@ export default function HomePage() {
             {/* Official Partner Section */}
             {partners && partners.length > 0 && (
               <div className="mb-16 md:mb-20">
-                <p className="text-[#ffd22f] text-center text-lg md:text-xl lg:text-2xl font-semibold mb-6 md:mb-8">
-                  Official Partner
-                </p>
+
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-6">
                   {partners.map((partner) => (
                     <div
@@ -1174,7 +1286,39 @@ export default function HomePage() {
 
         {/* Copyright Bar */}
 
+
       </div>
+
+      {/* Floating WhatsApp Button - FIXED */}
+      <a
+        href="https://wa.me/6281222977985"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 group"
+        aria-label="Chat WhatsApp"
+      >
+        {/* Pulse Ring Effect */}
+        <div className="absolute inset-0 bg-[#25D366] rounded-full animate-pulse-ring"></div>
+
+        {/* Main Button */}
+        <div className="relative bg-[#25D366] hover:bg-[#20BA5A] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 animate-float">
+          <img
+            src="/images/whatsapp-symbol-logo-svgrepo-com.svg"
+            alt="WhatsApp"
+            className="w-8 h-8 md:w-9 md:h-9"
+          />
+        </div>
+
+        {/* Tooltip */}
+        <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-xl">
+            Chat dengan Kami
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
+              <div className="border-8 border-transparent border-l-gray-900"></div>
+            </div>
+          </div>
+        </div>
+      </a>
 
       {/* Modal Review */}
       {showReviewModal && (
@@ -1297,6 +1441,172 @@ export default function HomePage() {
           </div>
         </div>
       )}
+      {/* ✅ EVENT NOTIF POPUP MODAL - COMPACT & SCROLLABLE */}
+      {showEventNotifPopup && activeEventNotif && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={handleCloseEventNotifPopup}
+          />
+
+          {/* Modal Content - COMPACT SIZE WITH SCROLL */}
+          <div className="relative bg-white rounded-xl max-w-sm w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-modal-appear border-2 border-gray-800">
+            {/* Close Button - STICKY */}
+            <button
+              onClick={handleCloseEventNotifPopup}
+              className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 hover:scale-110"
+            >
+              <X className="w-5 h-5 text-gray-800" strokeWidth={3} />
+            </button>
+
+            {/* Header */}
+            <div className="bg-white px-5 py-4 text-center border-b-2 border-gray-800 sticky top-0 z-20">
+              <h2 className="text-base font-black text-gray-900 uppercase tracking-tight mb-1">
+                {activeEventNotif.title}
+              </h2>
+              <p className="text-[10px] font-bold text-gray-700 uppercase tracking-wide leading-tight">
+                Amankan Slot Sebelum Kuota Habis
+              </p>
+            </div>
+
+            {/* Date & Time Section - COMPACT */}
+            <div className="px-5 py-3 text-center border-b-2 border-gray-800 bg-gray-50">
+              <p className="text-xs font-black text-gray-900 uppercase tracking-tight mb-1">
+                {activeEventNotif.formatted_date}
+              </p>
+              {activeEventNotif.formatted_time && (
+                <p className="text-[10px] font-bold text-gray-700 tracking-wide">
+                  Jam {activeEventNotif.formatted_time}
+                </p>
+              )}
+            </div>
+
+            {/* Pricing Grid - COMPACT */}
+            {(activeEventNotif.monthly_price || activeEventNotif.weekly_price) && (
+              <>
+                <div className="grid grid-cols-2 gap-3 p-4">
+                  {/* Monthly Package */}
+                  {activeEventNotif.monthly_price && (
+                    <div className="border-2 border-gray-800 rounded-lg p-3">
+                      <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1.5 leading-tight">
+                        Bulanan<br />(Lebih Hemat)
+                      </p>
+
+                      {activeEventNotif.monthly_discount_percent && activeEventNotif.monthly_original_price && (
+                        <p className="text-[9px] text-gray-600 line-through mb-1">
+                          Diskon {activeEventNotif.monthly_discount_percent}%
+                        </p>
+                      )}
+
+                      <p className="text-2xl font-black text-gray-800 mb-1">
+                        Rp{activeEventNotif.formatted_monthly_price}
+                      </p>
+
+                      <div className="space-y-0.5 text-[9px] text-gray-700 font-bold mb-2 pb-2 border-b-2 border-gray-200">
+                        <p>{activeEventNotif.monthly_frequency}</p>
+                        <p> +{activeEventNotif.monthly_loyalty_points}</p>
+                        {activeEventNotif.monthly_note && <p>{activeEventNotif.monthly_note}</p>}
+                      </div>
+
+                      <p className="text-[8px] font-black text-gray-800 uppercase tracking-tight text-center">
+                        {activeEventNotif.participant_count}+ Peserta
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Weekly Package */}
+                  {activeEventNotif.weekly_price && (
+                    <div className="border-2 border-gray-800 rounded-lg p-3 bg-gray-50">
+                      <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
+                        Mingguan
+                      </p>
+
+                      <p className="text-2xl font-black text-gray-800 mb-1">
+                        Rp{activeEventNotif.formatted_weekly_price}
+                      </p>
+
+                      <p className="text-[9px] font-bold text-gray-700 mb-2">
+                        1x pertemuan
+                      </p>
+
+                      <div className="space-y-0.5 text-[9px] text-gray-700 font-bold">
+                        <p>+{activeEventNotif.weekly_loyalty_points}</p>
+                        <p>{activeEventNotif.weekly_note}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Benefits Section - COMPACT */}
+                <div className="px-4 py-3 bg-gray-50 border-y-2 border-gray-800">
+                  <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
+                    Termasuk
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[9px] font-bold text-gray-800 mb-2">
+                    {activeEventNotif.benefits_list && activeEventNotif.benefits_list.map((benefit, idx) => (
+                      <div key={idx}>
+                        <p>{benefit.label || benefit}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-[9px] font-black text-gray-800 uppercase tracking-tight pt-2 border-t-2 border-gray-300 text-center leading-tight">
+                    {activeEventNotif.level_tagline}
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* Description Section */}
+            {!activeEventNotif.monthly_price && !activeEventNotif.weekly_price && activeEventNotif.description && (
+              <div className="p-4 border-b-2 border-gray-800">
+                <p className="text-[9px] font-bold text-gray-800 leading-relaxed text-center uppercase tracking-wide">
+                  {activeEventNotif.description}
+                </p>
+              </div>
+            )}
+
+            {/* Event Image - COMPACT */}
+            {activeEventNotif.image_url && (
+              <div className="relative h-32 overflow-hidden mx-4 my-3 rounded-lg border-2 border-gray-800">
+                <img
+                  src={activeEventNotif.image_url}
+                  alt={activeEventNotif.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Location Info - COMPACT */}
+            {activeEventNotif.location && (
+              <div className="px-4 py-3 text-center border-t-2 border-gray-800 bg-gray-50">
+                <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1">
+                  Lokasi
+                </p>
+                <p className="text-xs font-bold text-gray-800">
+                  {activeEventNotif.location}
+                </p>
+              </div>
+            )}
+
+            {/* CTA Button - STICKY */}
+            <div className="p-4 bg-white border-t-2 border-gray-800 sticky bottom-0 z-20">
+              <button
+                onClick={handleRegisterEvent}
+                className="w-full bg-gray-800 text-white py-3 rounded-lg font-black text-xs hover:bg-gray-900 active:scale-95 transition-all duration-200 uppercase tracking-widest border-2 border-gray-800 hover:shadow-lg"
+              >
+                Daftar Sekarang
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   );
 }

@@ -3,7 +3,9 @@
 
 @config "../../tailwind.config.js";
 
-/* Global Font Override */
+/* =========================
+   GLOBAL FONT OVERRIDE
+========================= */
 * {
   font-family: 'Montserrat', sans-serif !important;
 }
@@ -22,4 +24,70 @@
 
 .figtree {
   font-family: "Figtree", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+/* =========================
+   GOOGLE TRANSLATE CLEANUP
+========================= */
+
+/* Sembunyikan elemen translate container */
+#google_translate_element {
+  display: none !important;
+}
+
+/* Hilangin banner atas yang mengganggu */
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+}
+
+/* Hilangin semua frame banner */
+body > .skiptranslate {
+  display: none !important;
+}
+
+iframe.skiptranslate {
+  display: none !important;
+}
+
+/* Fix body yang kegeser ke bawah */
+body {
+  top: 0 !important;
+  position: static !important;
+}
+
+/* Hilangin logo & teks "Powered by Google" */
+.goog-logo-link,
+.goog-te-gadget span,
+.goog-te-gadget img {
+  display: none !important;
+}
+
+.goog-te-gadget {
+  color: transparent !important;
+  font-size: 0 !important;
+}
+
+/* PENTING: Dropdown harus tetap ada di DOM tapi invisible */
+.goog-te-combo {
+  opacity: 0 !important;
+  position: absolute !important;
+  pointer-events: none !important;
+  width: 1px !important;
+  height: 1px !important;
+}
+
+/* Style untuk popup menu translate (opsional) */
+.goog-te-menu-frame {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  border-radius: 8px !important;
+}
+
+/* Hilangin balloon/tooltip translate */
+.goog-te-balloon-frame {
+  display: none !important;
+}
+
+/* Reset z-index yang ngaco dari Google Translate */
+.skiptranslate {
+  z-index: 0 !important;
 }

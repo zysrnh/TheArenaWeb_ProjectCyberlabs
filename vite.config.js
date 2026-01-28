@@ -8,6 +8,7 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.jsx'],
             refresh: true,
+            buildDirectory: 'build', // ⬅️ TAMBAH INI
         }),
         tailwindcss(),
         react(),
@@ -15,6 +16,11 @@ export default defineConfig({
     resolve: {
         alias: {
             "@": "/resources/js",
+        },
+    },
+    server: {
+        hmr: {
+            host: 'localhost',
         },
     },
 });

@@ -9,6 +9,7 @@ use App\Models\Sponsor;
 use App\Models\Partner;
 use App\Models\Review;
 use App\Models\Facility;
+use App\Models\EventNotif;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -34,7 +35,6 @@ class HomeController extends Controller
                     ];
                 });
 
-            // Ambil 6 live matches terbaru yang aktif
             $liveMatches = LiveMatch::where('is_active', true)
                 ->orderBy('match_date', 'desc')
                 ->orderBy('time', 'desc')
@@ -56,10 +56,7 @@ class HomeController extends Controller
                     ];
                 });
 
-            // Get filter from request, default to 'all'
             $filter = $request->get('filter', 'all');
-
-            // Build query based on filter
             $query = Game::with(['team1', 'team2', 'team1Category', 'team2Category']);
 
             if ($filter === 'live') {
@@ -70,7 +67,6 @@ class HomeController extends Controller
                 $query->whereIn('status', ['live', 'upcoming', 'scheduled', 'finished', 'completed']);
             }
 
-            // Get matches
             $homeMatches = $query
                 ->orderByRaw("FIELD(status, 'live', 'upcoming', 'scheduled', 'finished', 'completed')")
                 ->orderBy('date', 'desc')
@@ -115,7 +111,6 @@ class HomeController extends Controller
                     ];
                 });
 
-            // Sponsors & Partners
             $sponsors = Sponsor::active()->ordered()->get()->map(function ($sponsor) {
                 return [
                     'id' => $sponsor->id,
@@ -132,7 +127,6 @@ class HomeController extends Controller
                 ];
             });
 
-            // Reviews
             $reviews = Review::with('client:id,name,profile_image')
                 ->approved()
                 ->latest()
@@ -152,22 +146,23 @@ class HomeController extends Controller
                     ];
                 });
 
-            // Handle gambar fasilitas - support URL & uploaded file
             $facilities = Facility::active()
                 ->ordered()
                 ->get()
                 ->map(function ($facility) {
                     $imageUrl = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800';
-                    
+
                     if ($facility->image_url) {
-                        if (str_starts_with($facility->image_url, 'http://') || 
-                            str_starts_with($facility->image_url, 'https://')) {
+                        if (
+                            str_starts_with($facility->image_url, 'http://') ||
+                            str_starts_with($facility->image_url, 'https://')
+                        ) {
                             $imageUrl = $facility->image_url;
                         } else {
                             $imageUrl = asset('storage/' . $facility->image_url);
                         }
                     }
-                    
+
                     return [
                         'id' => $facility->id,
                         'name' => $facility->name,
@@ -176,6 +171,51 @@ class HomeController extends Controller
                     ];
                 });
 
+         // Di HomeController index(), ganti bagian EVENT NOTIF dengan ini:
+
+// ✅ GET ACTIVE EVENT NOTIF (POPUP)
+$activeEventNotif = EventNotif::active()->first();
+
+$eventNotifData = null;
+if ($activeEventNotif) {
+    $eventNotifData = [
+        'id' => $activeEventNotif->id,
+        'title' => $activeEventNotif->title,
+        'description' => $activeEventNotif->description,
+        'image_url' => $activeEventNotif->image_url,
+        'formatted_date' => $activeEventNotif->formatted_date,
+        'formatted_time' => $activeEventNotif->formatted_time,
+        'location' => $activeEventNotif->location,
+
+        // Pricing Options
+        'monthly_original_price' => $activeEventNotif->monthly_original_price,
+        'formatted_monthly_original_price' => $activeEventNotif->formatted_monthly_original_price,
+        'monthly_price' => $activeEventNotif->monthly_price,
+        'formatted_monthly_price' => $activeEventNotif->formatted_monthly_price,
+        'monthly_discount_percent' => $activeEventNotif->monthly_discount_percent,
+        'weekly_price' => $activeEventNotif->weekly_price,
+        'formatted_weekly_price' => $activeEventNotif->formatted_weekly_price,
+
+        // ✅ MONTHLY BENEFITS
+        'monthly_frequency' => $activeEventNotif->monthly_frequency,
+        'monthly_loyalty_points' => $activeEventNotif->monthly_loyalty_points,
+        'monthly_note' => $activeEventNotif->monthly_note,
+
+        // ✅ WEEKLY BENEFITS
+        'weekly_loyalty_points' => $activeEventNotif->weekly_loyalty_points,
+        'weekly_note' => $activeEventNotif->weekly_note,
+
+        // ✅ GENERAL BENEFITS
+        'benefits_list' => $activeEventNotif->benefits_array, // Accessor
+        'participant_count' => $activeEventNotif->participant_count,
+        'level_tagline' => $activeEventNotif->level_tagline,
+
+        // WhatsApp
+        'whatsapp_number' => $activeEventNotif->whatsapp_number,
+        'whatsapp_message' => $activeEventNotif->whatsapp_message,
+        'whatsapp_url' => $activeEventNotif->whatsapp_url,
+    ];
+}
             return Inertia::render('HomePage/HomePage', [
                 'auth' => [
                     'client' => Auth::guard('client')->user()
@@ -188,6 +228,7 @@ class HomeController extends Controller
                 'partners' => $partners,
                 'reviews' => $reviews,
                 'facilities' => $facilities,
+                'activeEventNotif' => $eventNotifData, // ✅ PASS EVENT NOTIF DATA
             ]);
         } catch (\Exception $e) {
             Log::error('HomePage Error: ' . $e->getMessage());
@@ -205,13 +246,11 @@ class HomeController extends Controller
                 'partners' => [],
                 'reviews' => [],
                 'facilities' => [],
+                'activeEventNotif' => null,
             ]);
         }
     }
 
-    /**
-     * Normalize logo path
-     */
     private function normalizeLogoPath($logoPath, $teamName = null)
     {
         if (empty($logoPath)) {

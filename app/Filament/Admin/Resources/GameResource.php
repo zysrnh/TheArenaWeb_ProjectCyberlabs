@@ -1363,9 +1363,17 @@ class GameResource extends Resource
                                         Forms\Components\Select::make('player_id')
                                             ->label('Player')
                                             ->options(function ($record) {
-                                                return Player::where('team_id', $record->team1_id)
-                                                    ->where('is_active', true)
-                                                    ->orderBy('jersey_no')
+                                                // ✅ Tambahkan query builder
+                                                $query = Player::where('team_id', $record->team1_id)
+                                                    ->where('is_active', true);
+
+                                                // ✅ Filter by category jika ada
+                                                if ($record->team1_category_id) {
+                                                    $query->where('team_category_id', $record->team1_category_id);
+                                                }
+
+                                                // ✅ Gunakan $query, bukan langsung Player::where()
+                                                return $query->orderBy('jersey_no')
                                                     ->get()
                                                     ->mapWithKeys(function ($player) {
                                                         return [$player->id => "#{$player->jersey_no} - {$player->name} ({$player->position})"];
@@ -1439,9 +1447,17 @@ class GameResource extends Resource
                                         Forms\Components\Select::make('player_id')
                                             ->label('Player')
                                             ->options(function ($record) {
-                                                return Player::where('team_id', $record->team2_id)
-                                                    ->where('is_active', true)
-                                                    ->orderBy('jersey_no')
+                                                // ✅ Tambahkan query builder
+                                                $query = Player::where('team_id', $record->team2_id)
+                                                    ->where('is_active', true);
+
+                                                // ✅ Filter by category jika ada
+                                                if ($record->team2_category_id) {
+                                                    $query->where('team_category_id', $record->team2_category_id);
+                                                }
+
+                                                // ✅ Gunakan $query, bukan langsung Player::where()
+                                                return $query->orderBy('jersey_no')
                                                     ->get()
                                                     ->mapWithKeys(function ($player) {
                                                         return [$player->id => "#{$player->jersey_no} - {$player->name} ({$player->position})"];

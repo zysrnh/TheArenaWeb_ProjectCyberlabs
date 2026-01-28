@@ -1,20 +1,25 @@
 import { Head, Link, usePage, router } from "@inertiajs/react";
 import { useState, useEffect } from "react";
-import { Phone, Mail } from "lucide-react";
+import { Phone, Mail, X } from "lucide-react";
 import Footer from "../../Components/Footer";
 import Navigation from "../../Components/Navigation";
 
 export default function About() {
-  const { auth, aboutData, facilities } = usePage().props;
+const { auth, aboutData, facilities, activeEventNotif = null } = usePage().props;
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showContactBar, setShowContactBar] = useState(false);
+  const [showEventNotifPopup, setShowEventNotifPopup] = useState(false);
 
+
+  useEffect(() => {
+  if (activeEventNotif) {
+    setShowEventNotifPopup(true);
+  }
+}, [activeEventNotif]);
   // Debug facilities data
   useEffect(() => {
     console.log('Facilities data:', facilities);
-    console.log('Facilities length:', facilities?.length);
-    console.log('Is Array?', Array.isArray(facilities));
   }, [facilities]);
 
   useEffect(() => {
@@ -36,6 +41,17 @@ export default function About() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
+  const handleCloseEventNotifPopup = () => {
+  setShowEventNotifPopup(false);
+};
+
+const handleRegisterEvent = () => {
+  if (activeEventNotif?.whatsapp_url) {
+    window.open(activeEventNotif.whatsapp_url, '_blank', 'noopener,noreferrer');
+    handleCloseEventNotifPopup();
+  }
+};
+
   const handleLogout = () => {
     if (confirm('Apakah Anda yakin ingin keluar?')) {
       router.post('/logout');
@@ -55,7 +71,6 @@ export default function About() {
       return 'https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=800';
     }
     if (url.startsWith('http')) return url;
-    // Cek apakah file exists di storage
     return `/storage/${url}`;
   };
 
@@ -95,6 +110,29 @@ export default function About() {
     <>
       <Head title="THE ARENA - About" />
       <style>{`
+      @keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-modal-appear {
+  animation: modal-appear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
         * {
           font-family: 'Montserrat', sans-serif;
@@ -138,6 +176,34 @@ export default function About() {
             font-size: 18px;
           }
         }
+          @keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
       `}</style>
       
       <div className="min-h-screen flex flex-col bg-white">
@@ -188,7 +254,7 @@ export default function About() {
           {/* Left Section - Content */}
           <div className="bg-[#003f84] text-white p-6 md:p-10 lg:p-14 flex flex-col justify-center order-2 md:order-1">
             <h2 className="text-white text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6 leading-tight">
-              {aboutData?.komunitas?.title || 'Komunitas'}
+              Komunitas & Klub Basket
             </h2>
             
             <div className="space-y-3 md:space-y-4 text-gray-200 text-xs md:text-sm lg:text-base leading-relaxed">
@@ -262,9 +328,7 @@ export default function About() {
         {/* Tribun Penonton Section - 3 Columns Grid (DYNAMIC) */}
         <div className="grid grid-cols-1 md:grid-cols-3">
           {(() => {
-            // Cari data Tribun Penonton dari facilities atau aboutData
             const tribunData = facilities?.find(f => f.name.toLowerCase().includes('tribun')) || aboutData?.tribun;
-            const hasData = tribunData !== undefined;
 
             return (
               <>
@@ -300,7 +364,6 @@ export default function About() {
                 {/* Right - Text Content (2 columns) */}
                 <div className="md:col-span-2 bg-[#003f84] text-white p-4 md:p-6 lg:p-8 flex flex-col justify-center h-[280px] md:h-[320px] lg:h-[350px]">
                   <div className="space-y-3 md:space-y-4 text-gray-200 text-xs md:text-sm leading-relaxed">
-                    {/* Hanya tampilkan jika ada data dari aboutData (AboutContent) */}
                     {aboutData?.tribun?.description_1 && renderHTML(aboutData.tribun.description_1)}
                     {aboutData?.tribun?.description_2 && renderHTML(aboutData.tribun.description_2)}
                     {aboutData?.tribun?.description_3 && renderHTML(aboutData.tribun.description_3)}
@@ -322,8 +385,204 @@ export default function About() {
           </div>
         </div>
 
+{/* ✅ EVENT NOTIF POPUP MODAL - COMPACT & SCROLLABLE */}
+{showEventNotifPopup && activeEventNotif && (
+  <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in">
+    {/* Backdrop */}
+    <div 
+      className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+      onClick={handleCloseEventNotifPopup}
+    />
+    
+    {/* Modal Content - COMPACT SIZE WITH SCROLL */}
+    <div className="relative bg-white rounded-xl max-w-sm w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-modal-appear border-2 border-gray-800">
+      {/* Close Button - STICKY */}
+      <button
+        onClick={handleCloseEventNotifPopup}
+        className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 hover:scale-110"
+      >
+        <X className="w-5 h-5 text-gray-800" strokeWidth={3} />
+      </button>
+
+      {/* Header */}
+      <div className="bg-white px-5 py-4 text-center border-b-2 border-gray-800 sticky top-0 z-20">
+        <h2 className="text-base font-black text-gray-900 uppercase tracking-tight mb-1">
+          {activeEventNotif.title}
+        </h2>
+        <p className="text-[10px] font-bold text-gray-700 uppercase tracking-wide leading-tight">
+          Amankan Slot Sebelum Kuota Habis
+        </p>
+      </div>
+
+      {/* Date & Time Section - COMPACT */}
+      <div className="px-5 py-3 text-center border-b-2 border-gray-800 bg-gray-50">
+        <p className="text-xs font-black text-gray-900 uppercase tracking-tight mb-1">
+          {activeEventNotif.formatted_date}
+        </p>
+        {activeEventNotif.formatted_time && (
+          <p className="text-[10px] font-bold text-gray-700 tracking-wide">
+            Jam {activeEventNotif.formatted_time}
+          </p>
+        )}
+      </div>
+
+      {/* Pricing Grid - COMPACT */}
+      {(activeEventNotif.monthly_price || activeEventNotif.weekly_price) && (
+        <>
+          <div className="grid grid-cols-2 gap-3 p-4">
+            {/* Monthly Package */}
+            {activeEventNotif.monthly_price && (
+              <div className="border-2 border-gray-800 rounded-lg p-3">
+                <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1.5 leading-tight">
+                  Bulanan<br/>(Lebih Hemat)
+                </p>
+                
+                {activeEventNotif.monthly_discount_percent && activeEventNotif.monthly_original_price && (
+                  <p className="text-[9px] text-gray-600 line-through mb-1">
+                    Diskon {activeEventNotif.monthly_discount_percent}%
+                  </p>
+                )}
+                
+                <p className="text-2xl font-black text-gray-800 mb-1">
+                  Rp{activeEventNotif.formatted_monthly_price}
+                </p>
+            
+                <div className="space-y-0.5 text-[9px] text-gray-700 font-bold mb-2 pb-2 border-b-2 border-gray-200">
+                  <p>{activeEventNotif.monthly_frequency}</p>
+                  <p> +{activeEventNotif.monthly_loyalty_points}</p>
+                  {activeEventNotif.monthly_note && <p>{activeEventNotif.monthly_note}</p>}
+                </div>
+                
+                <p className="text-[8px] font-black text-gray-800 uppercase tracking-tight text-center">
+                  {activeEventNotif.participant_count}+ Peserta
+                </p>
+              </div>
+            )}
+
+            {/* Weekly Package */}
+            {activeEventNotif.weekly_price && (
+              <div className="border-2 border-gray-800 rounded-lg p-3 bg-gray-50">
+                <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
+                  Mingguan
+                </p>
+                
+                <p className="text-2xl font-black text-gray-800 mb-1">
+                  Rp{activeEventNotif.formatted_weekly_price}
+                </p>
+                
+                <p className="text-[9px] font-bold text-gray-700 mb-2">
+                  1x pertemuan
+                </p>
+                
+                <div className="space-y-0.5 text-[9px] text-gray-700 font-bold">
+                  <p>+{activeEventNotif.weekly_loyalty_points}</p>
+                  <p>{activeEventNotif.weekly_note}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Benefits Section - COMPACT */}
+          <div className="px-4 py-3 bg-gray-50 border-y-2 border-gray-800">
+            <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2">
+              Termasuk
+            </p>
+            
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[9px] font-bold text-gray-800 mb-2">
+              {activeEventNotif.benefits_list && activeEventNotif.benefits_list.map((benefit, idx) => (
+                <div key={idx}>
+                  <p>{benefit.label || benefit}</p>
+                </div>
+              ))}
+            </div>
+            
+            <p className="text-[9px] font-black text-gray-800 uppercase tracking-tight pt-2 border-t-2 border-gray-300 text-center leading-tight">
+              {activeEventNotif.level_tagline}
+            </p>
+          </div>
+        </>
+      )}
+
+      {/* Description Section */}
+      {!activeEventNotif.monthly_price && !activeEventNotif.weekly_price && activeEventNotif.description && (
+        <div className="p-4 border-b-2 border-gray-800">
+          <p className="text-[9px] font-bold text-gray-800 leading-relaxed text-center uppercase tracking-wide">
+            {activeEventNotif.description}
+          </p>
+        </div>
+      )}
+
+      {/* Event Image - COMPACT */}
+      {activeEventNotif.image_url && (
+        <div className="relative h-32 overflow-hidden mx-4 my-3 rounded-lg border-2 border-gray-800">
+          <img
+            src={activeEventNotif.image_url}
+            alt={activeEventNotif.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+        </div>
+      )}
+
+      {/* Location Info - COMPACT */}
+      {activeEventNotif.location && (
+        <div className="px-4 py-3 text-center border-t-2 border-gray-800 bg-gray-50">
+          <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1">
+            Lokasi
+          </p>
+          <p className="text-xs font-bold text-gray-800">
+            {activeEventNotif.location}
+          </p>
+        </div>
+      )}
+
+      {/* CTA Button - STICKY */}
+      <div className="p-4 bg-white border-t-2 border-gray-800 sticky bottom-0 z-20">
+        <button
+          onClick={handleRegisterEvent}
+          className="w-full bg-gray-800 text-white py-3 rounded-lg font-black text-xs hover:bg-gray-900 active:scale-95 transition-all duration-200 uppercase tracking-widest border-2 border-gray-800 hover:shadow-lg"
+        >
+          Daftar Sekarang
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
         <Footer />
       </div>
+      {/* Floating WhatsApp Button - FIXED */}
+<a
+  href="https://wa.me/6281222977985"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="fixed bottom-6 right-6 z-50 group"
+  aria-label="Chat WhatsApp"
+>
+  {/* Pulse Ring Effect */}
+  <div className="absolute inset-0 bg-[#25D366] rounded-full animate-pulse-ring"></div>
+  
+  {/* Main Button */}
+  <div className="relative bg-[#25D366] hover:bg-[#20BA5A] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 animate-float">
+    <img
+      src="/images/whatsapp-symbol-logo-svgrepo-com.svg"
+      alt="WhatsApp"
+      className="w-8 h-8 md:w-9 md:h-9"
+    />
+  </div>
+  
+  {/* Tooltip */}
+  <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+    <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-xl">
+      Chat dengan Kami
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
+        <div className="border-8 border-transparent border-l-gray-900"></div>
+      </div>
+    </div>
+  </div>
+</a>
     </>
   );
 }
