@@ -325,42 +325,63 @@ export default function Booking({ auth, venue, venues = {}, schedules = [], curr
   };
 
   const confirmBooking = async () => {
-    setIsProcessing(true);
+  setIsProcessing(true);
 
-    try {
-      const response = await fetch("/api/booking/process", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          venue_id: venue?.id,
-          date: selectedDate,
-          time_slots: selectedTimeSlots,
-          venue_type: venue.venue_type,
-        }),
-      });
+  try {
+    const response = await fetch("/api/booking/process", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        venue_id: venue?.id,
+        date: selectedDate,
+        time_slots: selectedTimeSlots,
+        venue_type: venue.venue_type,
+      }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (data.success) {
-        setShowConfirmModal(false);
-        setShowSuccessModal(true);
-        fetchTimeSlots();
-      } else {
-        alert(data.message || "Terjadi kesalahan saat melakukan booking");
-        setShowConfirmModal(false);
-      }
-    } catch (error) {
-      console.error("Booking error:", error);
-      alert("Terjadi kesalahan saat melakukan booking");
+    if (data.success) {
       setShowConfirmModal(false);
-    } finally {
-      setIsProcessing(false);
+      setShowSuccessModal(true);
+      fetchTimeSlots();
+    } else {
+      // ✅ Close modal terlebih dahulu
+      setShowConfirmModal(false);
+      
+      // ✅ Tampilkan error sebagai notification popup (sama seperti notif login)
+      setNotification({
+        type: 'error',
+        message: data.message || "Terjadi kesalahan saat melakukan booking"
+      });
+      
+      // ✅ Auto dismiss after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+      
+      // ✅ Refresh time slots untuk update status booking
+      fetchTimeSlots();
     }
-  };
+  } catch (error) {
+    console.error("Booking error:", error);
+    
+    setShowConfirmModal(false);
+    
+    // ✅ Tampilkan error sebagai notification popup
+    setNotification({
+      type: 'error',
+      message: "Terjadi kesalahan saat melakukan booking. Silakan coba lagi."
+    });
+    
+    setTimeout(() => setNotification(null), 5000);
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
 
   const handleSuccessClose = () => {
     setShowSuccessModal(false);

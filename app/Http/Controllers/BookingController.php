@@ -65,7 +65,7 @@ class BookingController extends Controller
                 'venue_type' => 'cibadak_a',
                 'name' => 'The Arena Cibadak A',
                 'location' => 'GG Nyi Empok No. 8, Kota Bandung',
-                'full_address' => 'Gg. Nyi Empok No.8, Cibadak, Kec. Astanaanyar, Kota Bandung, Jawa Barat 40241', // ✅ TAMBAHKAN
+                'full_address' => 'Gg. Nyi Empok No.8, Cibadak, Kec. Astanaanyar, Kota Bandung, Jawa Barat 40241',
                 'description' => 'Basketball Courts & Healthy Lifestyle Space',
                 'full_description' => 'The Arena Cibadak berlokasi di GG Nyi Empok No. 8, Kota Bandung. The Arena Cibadak memiliki 2 lapangan basket indoor berstandar internasional dengan lantai kayu jati (Cibadak A) dan Vinyl (Cibadak B).',
                 'invitation' => 'Rasakan pengalaman bermain basket di lapangan berstandar internasional dengan fasilitas lengkap dan lokasi strategis di Bandung.',
@@ -98,8 +98,7 @@ class BookingController extends Controller
                 'venue_type' => 'cibadak_b',
                 'name' => 'The Arena Cibadak B',
                 'location' => 'GG Nyi Empok No. 8, Kota Bandung',
-                'full_address' => 'Gg. Nyi Empok No.8, Cibadak, Kec. Astanaanyar, Kota Bandung, Jawa Barat 40241', // ✅ TAMBAHKAN
-
+                'full_address' => 'Gg. Nyi Empok No.8, Cibadak, Kec. Astanaanyar, Kota Bandung, Jawa Barat 40241',
                 'description' => 'Basketball Courts & Healthy Lifestyle Space',
                 'full_description' => 'The Arena Cibadak berlokasi di GG Nyi Empok No. 8, Kota Bandung. The Arena Cibadak memiliki 2 lapangan basket indoor berstandar internasional dengan lantai kayu jati (Cibadak A) dan Vinyl (Cibadak B).',
                 'invitation' => 'Rasakan pengalaman bermain basket di lapangan berstandar internasional dengan fasilitas lengkap dan lokasi strategis di Bandung.',
@@ -170,8 +169,7 @@ class BookingController extends Controller
                 'venue_type' => 'urban',
                 'name' => 'The Arena Urban',
                 'location' => 'Jl. Urban Complex No. 88, Bandung',
-                'full_address' => 'Jl. Kelenteng No.41, Ciroyom, Kec. Andir, Kota Bandung, Jawa Barat 40181', // ✅ TAMBAHKAN
-
+                'full_address' => 'Jl. Kelenteng No.41, Ciroyom, Kec. Andir, Kota Bandung, Jawa Barat 40181',
                 'description' => 'Lapangan basket semi-outdoor dengan lantai vinyl',
                 'full_description' => 'The Arena Urban merupakan lapangan basket semi-outdoor dengan lantai vinyl, dilengkapi seating area luas dan suasana yang nyaman. Cocok untuk bermain menonton, maupun bersantai.',
                 'invitation' => 'Nikmati pengalaman bermain basket di arena semi-outdoor dengan suasana nyaman dan fasilitas lengkap untuk aktivitas olahraga dan rekreasi.',
@@ -268,93 +266,79 @@ class BookingController extends Controller
      */
     private function calculatePrice($venueType, $date, $timeSlot)
     {
-        // Parse date to get day of week (0 = Minggu, 1 = Senin, ..., 6 = Sabtu)
         $dayOfWeek = Carbon::parse($date)->dayOfWeek;
-        $isWeekend = in_array($dayOfWeek, [0, 6]); // Sabtu & Minggu
+        $isWeekend = in_array($dayOfWeek, [0, 6]);
 
-        // Extract start hour from time slot (e.g., "06.00 - 08.00" -> 6)
         preg_match('/^(\d{2})\./', $timeSlot, $matches);
         $startHour = isset($matches[1]) ? (int)$matches[1] : 0;
 
-        // Dynamic pricing for PVJ
         if ($venueType === 'pvj') {
             if ($isWeekend) {
-                // Sabtu - Minggu
                 if ($startHour >= 6 && $startHour < 16) {
-                    return 700000; // 06:00 - 16:00
+                    return 700000;
                 } elseif ($startHour >= 16 && $startHour < 20) {
-                    return 700000; // 16:00 - 20:00
+                    return 700000;
                 } elseif ($startHour >= 20 && $startHour < 24) {
-                    return 500000; // 20:00 - 24:00
+                    return 500000;
                 }
             } else {
-                // Senin - Jumat
                 if ($startHour >= 6 && $startHour < 16) {
-                    return 350000; // 06:00 - 16:00
+                    return 350000;
                 } elseif ($startHour >= 16 && $startHour < 20) {
-                    return 700000; // 16:00 - 20:00
+                    return 700000;
                 } elseif ($startHour >= 20 && $startHour < 24) {
-                    return 500000; // 20:00 - 24:00
+                    return 500000;
                 }
             }
         }
 
-        // Dynamic pricing for Cibadak A
         if ($venueType === 'cibadak_a') {
             if ($isWeekend) {
-                // Sabtu - Minggu
                 if ($startHour >= 6 && $startHour < 20) {
-                    return 700000; // 06:00 - 20:00
+                    return 700000;
                 } elseif ($startHour >= 20 && $startHour < 24) {
-                    return 500000; // 20:00 - 24:00
+                    return 500000;
                 }
             } else {
-                // Senin - Jumat
                 if ($startHour >= 6 && $startHour < 16) {
-                    return 350000; // 06:00 - 16:00
+                    return 350000;
                 } elseif ($startHour >= 16 && $startHour < 24) {
-                    return 700000; // 16:00 - 24:00
+                    return 700000;
                 }
             }
         }
 
-        // Dynamic pricing for Cibadak B
         if ($venueType === 'cibadak_b') {
             if ($isWeekend) {
-                // Sabtu - Minggu
                 if ($startHour >= 6 && $startHour < 20) {
-                    return 550000; // 06:00 - 20:00
+                    return 550000;
                 } elseif ($startHour >= 20 && $startHour < 24) {
-                    return 450000; // 20:00 - 24:00
+                    return 450000;
                 }
             } else {
-                // Senin - Jumat
                 if ($startHour >= 6 && $startHour < 16) {
-                    return 300000; // 06:00 - 16:00
+                    return 300000;
                 } elseif ($startHour >= 16 && $startHour < 20) {
-                    return 550000; // 16:00 - 20:00
+                    return 550000;
                 } elseif ($startHour >= 20 && $startHour < 24) {
-                    return 450000; // 20:00 - 24:00
+                    return 450000;
                 }
             }
         }
 
-        // Dynamic pricing for Urban
         if ($venueType === 'urban') {
             if ($isWeekend) {
-                // Sabtu - Minggu
-                return 550000; // 06:00 - 24:00
+                return 550000;
             } else {
-                // Senin - Jumat
                 if ($startHour >= 6 && $startHour < 16) {
-                    return 300000; // 06:00 - 16:00
+                    return 300000;
                 } elseif ($startHour >= 16 && $startHour < 24) {
-                    return 550000; // 16:00 - 24:00
+                    return 550000;
                 }
             }
         }
 
-        return 350000; // Fallback
+        return 350000;
     }
 
     /**
@@ -362,7 +346,6 @@ class BookingController extends Controller
      */
     public function getTimeSlots(Request $request)
     {
-        // ✅ Auto-cancel expired bookings sebelum cek slot
         $this->cancelExpiredPendingBookings();
 
         $date = $request->input('date');
@@ -380,11 +363,9 @@ class BookingController extends Controller
             ['time' => '22.00 - 00.00', 'duration' => 120],
         ];
 
-        // ✅ PERBAIKAN: Hanya hitung slot yang payment_status = 'paid' ATAU status = 'confirmed'
         $bookedFromTimeSlots = BookedTimeSlot::where('date', $date)
             ->where('venue_type', $venueType)
             ->whereHas('booking', function ($query) {
-                // ✅ HANYA yang sudah bayar ATAU confirmed yang dianggap booked
                 $query->where(function ($q) {
                     $q->where('payment_status', 'paid')
                         ->orWhere('status', 'confirmed');
@@ -393,11 +374,9 @@ class BookingController extends Controller
             ->pluck('time_slot')
             ->toArray();
 
-        // ✅ PERBAIKAN: Sama untuk booking langsung
         $bookedFromBookings = Booking::where('booking_date', $date)
             ->where('venue_type', $venueType)
             ->where(function ($query) {
-                // ✅ HANYA yang sudah bayar ATAU confirmed
                 $query->where('payment_status', 'paid')
                     ->orWhere('status', 'confirmed');
             })
@@ -408,10 +387,8 @@ class BookingController extends Controller
             ->unique()
             ->toArray();
 
-        // ✅ Merge kedua hasil
         $bookedSlots = array_unique(array_merge($bookedFromTimeSlots, $bookedFromBookings));
 
-        // ✅ Add dynamic pricing to each slot
         $timeSlots = array_map(function ($slot) use ($bookedSlots, $venueType, $date) {
             $slot['price'] = $this->calculatePrice($venueType, $date, $slot['time']);
             $slot['status'] = in_array($slot['time'], $bookedSlots) ? 'booked' : 'available';
@@ -425,7 +402,7 @@ class BookingController extends Controller
     }
 
     /**
-     * ✅ UPDATED: Validate price + Cek konflik hanya dengan booking yang sudah terbayar
+     * ✅ IMPROVED: Better error messages for different booking conflicts
      */
     public function processBooking(Request $request)
     {
@@ -452,12 +429,11 @@ class BookingController extends Controller
         }
 
         try {
-            // ✅ Auto-cancel expired bookings sebelum proses
             $this->cancelExpiredPendingBookings();
 
             DB::beginTransaction();
 
-            // ✅ Validate prices from client match server calculation
+            // Validate prices
             foreach ($validated['time_slots'] as $slot) {
                 $expectedPrice = $this->calculatePrice(
                     $validated['venue_type'],
@@ -476,12 +452,13 @@ class BookingController extends Controller
 
             $requestedSlots = array_column($validated['time_slots'], 'time');
 
-            // ✅ PERBAIKAN: Cek konflik HANYA dengan booking yang sudah terbayar atau confirmed
-            $alreadyBooked = BookedTimeSlot::where('date', $validated['date'])
+            // ✅ IMPROVED: Cek dengan 2 kategori berbeda untuk error message yang lebih spesifik
+            
+            // 1. Cek slot yang SUDAH TERBAYAR/CONFIRMED (tidak bisa diambil sama sekali)
+            $confirmedBooked = BookedTimeSlot::where('date', $validated['date'])
                 ->where('venue_type', $validated['venue_type'])
                 ->whereIn('time_slot', $requestedSlots)
                 ->whereHas('booking', function ($query) {
-                    // ✅ HANYA yang sudah bayar ATAU confirmed
                     $query->where(function ($q) {
                         $q->where('payment_status', 'paid')
                             ->orWhere('status', 'confirmed');
@@ -489,18 +466,44 @@ class BookingController extends Controller
                 })
                 ->exists();
 
-            if ($alreadyBooked) {
+            if ($confirmedBooked) {
                 DB::rollBack();
 
                 if ($request->expectsJson() || $request->is('api/*')) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Maaf, ada slot waktu yang sudah dibooking oleh orang lain. Silakan pilih slot waktu lain.'
+                        'message' => 'Maaf, slot waktu yang Anda pilih sudah dibooking dan terkonfirmasi. Silakan pilih slot waktu lain.'
                     ], 422);
                 }
 
                 return back()->withErrors([
-                    'message' => 'Maaf, ada slot waktu yang sudah dibooking oleh orang lain. Silakan pilih slot waktu lain.'
+                    'message' => 'Maaf, slot waktu yang Anda pilih sudah dibooking dan terkonfirmasi. Silakan pilih slot waktu lain.'
+                ]);
+            }
+
+            // 2. Cek slot yang MASIH PENDING (belum bayar, masih dalam batas waktu 10 menit)
+            $pendingBooked = BookedTimeSlot::where('date', $validated['date'])
+                ->where('venue_type', $validated['venue_type'])
+                ->whereIn('time_slot', $requestedSlots)
+                ->whereHas('booking', function ($query) {
+                    $query->where('status', 'pending')
+                          ->where('payment_status', 'pending')
+                          ->where('created_at', '>=', Carbon::now()->subMinutes(10)); // Masih fresh
+                })
+                ->exists();
+
+            if ($pendingBooked) {
+                DB::rollBack();
+
+                if ($request->expectsJson() || $request->is('api/*')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Slot waktu ini sedang dalam proses booking oleh pengguna lain. Silakan tunggu beberapa menit atau pilih slot waktu lain.'
+                    ], 423); // 423 Locked - slot sementara dikunci
+                }
+
+                return back()->withErrors([
+                    'message' => 'Slot waktu ini sedang dalam proses booking oleh pengguna lain. Silakan tunggu beberapa menit atau pilih slot waktu lain.'
                 ]);
             }
 
@@ -531,16 +534,17 @@ class BookingController extends Controller
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Booking berhasil! Silakan lanjutkan ke pembayaran dalam 30 menit.',
+                    'message' => 'Booking berhasil! Silakan lanjutkan ke pembayaran dalam 10 menit.',
                     'booking_id' => $booking->id,
                     'redirect_to_profile' => true,
+                    'expires_at' => $booking->created_at->addMinutes(10)->toIso8601String(),
                 ]);
             }
 
             return back()->with([
                 'flash' => [
                     'success' => true,
-                    'message' => 'Booking berhasil! Silakan lanjutkan ke pembayaran dalam 30 menit.',
+                    'message' => 'Booking berhasil! Silakan lanjutkan ke pembayaran dalam 10 menit.',
                     'booking_id' => $booking->id,
                 ]
             ]);
